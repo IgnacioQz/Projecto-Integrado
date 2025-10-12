@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    <title>Inicio</title>
+{% endblock %}
+
+{% block styles %}
+{% endblock %}
+
+{% block main %}
+    <h1>Bienvenido a la página de corredores de NUAM</h1>
+    <p>Por favor, inicia sesión para continuar.</p>
+    <a href="{% url 'login' %}">Iniciar sesión</a>
+
+{% endblock %}
