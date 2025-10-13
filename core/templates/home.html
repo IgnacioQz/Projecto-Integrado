@@ -8,8 +8,17 @@
 {% endblock %}
 
 {% block main %}
-    <h1>Bienvenido a la página de corredores de NUAM</h1>
-    <p>Por favor, inicia sesión para continuar.</p>
-    <a href="{% url 'login' %}">Iniciar sesión</a>
+    <div class="welcome-container">
+        <div class="logo-circle">
+            <i>📊</i>
+        </div>
+    
+        <h1>Sistema de Calificaciones Tributarias de NUAM</h1>
+        <p class="subtitle">Gestiona y consulta calificaciones de manera eficiente</p>
+    
+        <a href="{% url 'login' %}" class="btn btn-primary-custom">
+        Iniciar Sesión →
+        </a>
+    </div>
 
 {% endblock %}
