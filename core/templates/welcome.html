@@ -1,20 +1,22 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}
     <title>Inicio</title>
 {% endblock %}
 
 {% block styles %}
+    <link rel="stylesheet" href="{% static 'css/welcome.css' %}">
 {% endblock %}
 
 {% block main %}
-    <div class="container-sm">
-        
+
+    <div class="container-sm welcome-hero">
         <h1>Sistema de Calificaciones Tributarias de NUAM</h1>
         <p class="subtitle">Gestiona y consulta calificaciones de manera eficiente</p>
-    
-        <a href="{% url 'login' %}" class="btn btn-primary-custom">
-            <button type="button" class="btn btn-outline-primary">Iniciar Cesion</button>
+
+        <a href="{% url 'login' %}" class="btn btn-primary">
+            Iniciar Sesión
         </a>
     </div>
 

@@ -1,5 +1,5 @@
 body{
-    font-family: 'Arial Narrow', sans-serifns-serif;
+    font-family: "Arial Narrow", Arial, sans-serif;
     margin: 0;
     padding: 0;
     background-color: #f4f4f4;
@@ -10,4 +10,13 @@ body{
     color: #ffffff;
     padding: 10px 0;
     text-align: center;
+}
+
+/* Navbar naranja */
+.navbar {
+    background-color: #ff7a00 !important; /* tono naranja */
+}
+.navbar .navbar-brand,
+.navbar .nav-link {
+    color: #ffffff !important;
 }
