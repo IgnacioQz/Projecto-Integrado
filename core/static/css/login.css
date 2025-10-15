@@ -1,0 +1,89 @@
+/* Estilos para la pantalla de login - inspirado en welcome.css */
+.container-hero {
+    min-height: 75vh; /* ocupa altura suficiente para centrar visualmente */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(255,122,0,0.04), rgba(0,0,0,0));
+}
+
+/* Tarjeta del formulario */
+.login-card {
+    width: 100%;
+    max-width: 480px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    padding: 2rem;
+    border: 1px solid rgba(0,0,0,0.06);
+}
+
+/* Título */
+.login-card h1 {
+    margin-bottom: 0.5rem;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #222;
+}
+
+/* Subtítulo/ayuda */
+.login-card .subtitle {
+    margin-bottom: 1.25rem;
+    color: #555;
+    font-size: 0.95rem;
+}
+
+/* Inputs */
+.login-card .form-control {
+    border-radius: 8px;
+    border: 1px solid #e6e6e6;
+    padding: 0.65rem 0.75rem;
+    box-shadow: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.login-card .form-control:focus {
+    border-color: #ff7a00;
+    box-shadow: 0 0 0 0.15rem rgba(255,122,0,0.12);
+    outline: none;
+}
+
+/* Botón principal */
+.login-card .btn-primary {
+    background-color: #ff7a00;
+    border-color: #ff7a00;
+    color: #fff;
+    padding: 0.6rem 1.1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: filter .12s ease, transform .06s ease;
+}
+
+.login-card .btn-primary:hover {
+    filter: brightness(0.95);
+    transform: translateY(-1px);
+}
+
+/* Enlaces / acciones secundarias */
+.login-card .text-muted a {
+    color: #ff7a00;
+    text-decoration: none;
+}
+.login-card .text-muted a:hover { text-decoration: underline; }
+
+/* Error / alerta (si muestras mensajes) */
+.alert {
+    margin-bottom: 1rem;
+    border-radius: 8px;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 576px) {
+    .login-card {
+        padding: 1.25rem;
+        border-radius: 10px;
+    }
+    .login-card h1 { font-size: 1.4rem; }
+}
