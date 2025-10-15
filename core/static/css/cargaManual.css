@@ -1,47 +1,372 @@
-/* Estilos específicos para la vista de carga manual */
+/**
+ * main.css
+ * Estilos para el mantenedor principal de calificaciones tributarias
+ * NUAM - Sistema de gestión
+ */
+
+
+/* ===================================
+   SECCIÓN: Layout general
+   =================================== */
+
+body {
+    background: #f5f7fa;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+
+/* ===================================
+   SECCIÓN: Header
+   =================================== */
+
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header .logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.header .user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header .user-name {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+
+/* ===================================
+   SECCIÓN: Filtros superiores
+   =================================== */
+
+.top-filters {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-item.checkbox-item {
+    flex-direction: row;
+    align-items: center;
+}
+
+.search-actions {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+
+/* ===================================
+   SECCIÓN: Data table container
+   =================================== */
+
+.data-table {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.data-table h4,
+.data-table h5 {
+    margin-bottom: 1rem;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+
+/* ===================================
+   SECCIÓN: Tabla con scroll
+   =================================== */
+
+.table-wrapper {
+    max-height: 500px;
+    overflow: auto;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 8px;
+    background: #fff;
+}
 
 .table-wrapper--padded {
     padding: 1rem;
 }
 
-/* Action bar: variante inicio (alinear a la izquierda) */
+/* Tabla base */
+.table {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+
+/* ===================================
+   SECCIÓN: Header de tabla (sticky)
+   =================================== */
+
+.table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f8f9fa;
+}
+
+.table thead th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 12px 8px;
+    background: #f8f9fa;
+}
+
+
+/* ===================================
+   SECCIÓN: Body de tabla
+   =================================== */
+
+.table tbody td,
+.table tbody th {
+    font-size: 0.875rem;
+    padding: 10px 8px;
+    vertical-align: middle;
+}
+
+.table tbody tr:hover {
+    background-color: #f1f3f5;
+    cursor: pointer;
+}
+
+
+/* ===================================
+   SECCIÓN: Columna fija (solo ID)
+   =================================== */
+
+.table th:nth-child(1),
+.table td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 5;
+    border-right: 2px solid #dee2e6;
+    font-weight: 600;
+}
+
+.table thead th:nth-child(1) {
+    background: #f8f9fa;
+    z-index: 15;
+}
+
+
+/* ===================================
+   SECCIÓN: Scrollbar personalizado
+   =================================== */
+
+.table-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+
+/* ===================================
+   SECCIÓN: Action Bar (Barra de acciones)
+   =================================== */
+
+.action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    margin-top: 1rem;
+}
+
 .action-bar--start {
     justify-content: flex-start;
 }
 
-/* Evita estilos inline duplicados, usa utilidades y clases ya definidas en main.css */
+.action-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.action-buttons .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+
+/* ===================================
+   SECCIÓN: Formulario Manual
+   =================================== */
+
 .manual-form .form-label {
     font-size: 0.9rem;
     font-weight: 600;
     color: #333;
+    margin-bottom: 0.375rem;
 }
 
-/* Ajustes visuales de la vista previa */
-.data-table h5 {
-    margin-bottom: 0.5rem;
+
+/* ===================================
+   SECCIÓN: Badge para valores
+   =================================== */
+
+.badge-factor {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    display: inline-block;
 }
 
-/* Asegura que la tabla quede dentro de la tarjeta y con borde sutil */
-.table-wrapper {
-    max-height: 360px;
-    overflow: auto;
-    border: 1px solid rgba(0,0,0,0.06);
-    border-radius: 8px;
-    background: #fff;
+
+/* ===================================
+   SECCIÓN: Responsive
+   =================================== */
+
+@media (max-width: 992px) {
+    .top-filters {
+        flex-direction: column;
+    }
+    
+    .filters-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .search-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .search-actions .input-group {
+        width: 100% !important;
+        min-width: auto !important;
+    }
 }
 
-/* Espaciado entre botones */
-.action-buttons .btn {
-    margin-right: 0.5rem;
-}
-
-/* Último botón sin margen extra */
-.action-buttons .btn:last-child {
-    margin-right: 0;
-}
-
-/* Responsive: adaptar formulario y tabla */
 @media (max-width: 768px) {
-    .table-wrapper { max-height: 260px; }
-    .action-buttons { flex-direction: column; gap: 0.5rem; align-items: stretch; }
+    .container {
+        padding: 10px;
+    }
+    
+    .header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .header .logo {
+        font-size: 1.2rem;
+    }
+    
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .data-table {
+        padding: 1rem;
+    }
+    
+    /* Tabla con altura reducida */
+    .table-wrapper {
+        max-height: 400px;
+    }
+    
+    /* Botones apilados verticalmente */
+    .action-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Ajustar tamaños de fuente */
+    .table thead th,
+    .table tbody td,
+    .table tbody th {
+        font-size: 0.75rem;
+        padding: 8px 6px;
+    }
+}
+
+@media (max-width: 576px) {
+    .header .logo {
+        font-size: 1rem;
+    }
+    
+    .table-wrapper {
+        max-height: 300px;
+    }
+    
+    .table thead th,
+    .table tbody td,
+    .table tbody th {
+        font-size: 0.7rem;
+        padding: 6px 4px;
+    }
 }

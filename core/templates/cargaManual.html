@@ -19,14 +19,16 @@
     </div>
 
     <div class="container">
+        <!-- Barra de acciones superior -->
         <div class="action-bar action-bar--start mb-3">
             <div class="action-buttons">
                 <button class="btn btn-primary">Guardar</button>
                 <button class="btn btn-secondary">Limpiar</button>
-                <button class="btn btn-outline-secondary">Cancelar</button>
+                <a href="{% url 'main' %}" class="btn btn-outline-secondary">Cancelar</a>
             </div>
         </div>
 
+        <!-- Formulario de carga manual -->
         <div class="data-table mb-3">
             <div class="table-wrapper table-wrapper--padded">
                 <form id="manualForm" class="row g-3 manual-form">
@@ -87,24 +89,149 @@
         </div>
 
         <div class="data-table">
-            <h5>Vista previa</h5>
+            <h5>Vista previa - Calificaciones con factores</h5>
             <div class="table-wrapper">
-                <table class="table table-sm mb-0">
+                <table class="table table-sm table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Ejercicio</th><th>Instrumento</th><th>Fecha Pago</th><th>Valor</th><th>Factor</th><th>Origen</th>
+                            <th>ID</th>
+                            <th>Ejercicio</th>
+                            <th>Instrumento</th>
+                            <th>Fecha Pago</th>
+                            <th>Descripción</th>
+                            <th>Valor</th>
+                            <th>Origen</th>
+                            <th>Factor-08</th>
+                            <th>Factor-09</th>
+                            <th>Factor-10</th>
+                            <th>Factor-11</th>
+                            <th>Factor-12</th>
+                            <th>Factor-13</th>
+                            <th>Factor-14</th>
+                            <th>Factor-15</th>
+                            <th>Factor-16</th>
+                            <th>Factor-17</th>
+                            <th>Factor-18</th>
+                            <th>Factor-19</th>
+                            <th>Factor-20</th>
+                            <th>Factor-21</th>
+                            <th>Factor-22</th>
+                            <th>Factor-23</th>
+                            <th>Factor-24</th>
+                            <th>Factor-25</th>
+                            <th>Factor-26</th>
+                            <th>Factor-27</th>
+                            <th>Factor-28</th>
+                            <th>Factor-29</th>
+                            <th>Factor-30</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>2025</td><td>ABC-001</td><td>2025-10-15</td><td>$1,250,000</td><td>0.00</td><td>manual</td>
+                            <th>1</th>
+                            <td>2025</td>
+                            <td>ACCIONES - BBVA</td>
+                            <td>2025-05-15</td>
+                            <td>Dividendo ordinario</td>
+                            <td>$1,250,000</td>
+                            <td>manual</td>
+                            <td>0.80</td>
+                            <td>0.82</td>
+                            <td>0.83</td>
+                            <td>0.84</td>
+                            <td>0.85</td>
+                            <td>0.86</td>
+                            <td>0.87</td>
+                            <td>0.88</td>
+                            <td>0.89</td>
+                            <td>0.90</td>
+                            <td>0.91</td>
+                            <td>0.92</td>
+                            <td>0.93</td>
+                            <td>0.94</td>
+                            <td>0.95</td>
+                            <td>0.96</td>
+                            <td>0.97</td>
+                            <td>0.98</td>
+                            <td>0.99</td>
+                            <td>1.00</td>
+                            <td>1.01</td>
+                            <td>1.02</td>
+                            <td>1.03</td>
                         </tr>
-                        <!-- filas de ejemplo / mockup visual -->
+                        <tr>
+                            <th>2</th>
+                            <td>2025</td>
+                            <td>Renta Fija - BONOS XYZ</td>
+                            <td>2025-06-20</td>
+                            <td>Pago cupón semestral</td>
+                            <td>$890,500</td>
+                            <td>file</td>
+                            <td>0.88</td>
+                            <td>0.89</td>
+                            <td>0.90</td>
+                            <td>0.91</td>
+                            <td>0.92</td>
+                            <td>0.93</td>
+                            <td>0.94</td>
+                            <td>0.95</td>
+                            <td>0.96</td>
+                            <td>0.97</td>
+                            <td>0.98</td>
+                            <td>0.99</td>
+                            <td>1.00</td>
+                            <td>1.01</td>
+                            <td>1.02</td>
+                            <td>1.03</td>
+                            <td>1.04</td>
+                            <td>1.05</td>
+                            <td>1.06</td>
+                            <td>1.07</td>
+                            <td>1.08</td>
+                            <td>1.09</td>
+                            <td>1.10</td>
+                        </tr>
+                        <tr>
+                            <th>3</th>
+                            <td>2025</td>
+                            <td>ACCIONES - TELEFÓNICA</td>
+                            <td>2025-07-10</td>
+                            <td>Dividendo extraordinario</td>
+                            <td>$2,100,000</td>
+                            <td>manual</td>
+                            <td>0.70</td>
+                            <td>0.72</td>
+                            <td>0.73</td>
+                            <td>0.74</td>
+                            <td>0.75</td>
+                            <td>0.76</td>
+                            <td>0.77</td>
+                            <td>0.78</td>
+                            <td>0.79</td>
+                            <td>0.80</td>
+                            <td>0.81</td>
+                            <td>0.82</td>
+                            <td>0.83</td>
+                            <td>0.84</td>
+                            <td>0.85</td>
+                            <td>0.86</td>
+                            <td>0.87</td>
+                            <td>0.88</td>
+                            <td>0.89</td>
+                            <td>0.90</td>
+                            <td>0.91</td>
+                            <td>0.92</td>
+                            <td>0.93</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
+            <small class="text-muted d-block mt-2">
+                💡 Las columnas ID y Ejercicio permanecen fijas al hacer scroll horizontal
+            </small>
         </div>
 
+        <!-- Barra de acciones inferior -->
         <div class="action-bar mt-3">
             <div class="action-buttons">
                 <button class="btn btn-primary">Guardar</button>

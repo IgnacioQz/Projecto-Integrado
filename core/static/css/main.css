@@ -1,166 +1,388 @@
-/* estilos específicos para main (movidos desde main.html) */
+/**
+ * main.css
+ * Estilos visuales para el mantenedor principal
+ * NUAM - Sistema de gestión de calificaciones tributarias
+ */
+
+
+/* ===================================
+   SECCIÓN: Layout general
+   =================================== */
+
+body {
+    background: #f5f7fa;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+
+/* ===================================
+   SECCIÓN: Header
+   =================================== */
 
 .header {
-    background: #ffffff;
-    padding: 1rem 2rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    background: linear-gradient(135deg, #ff7a00 0%, #ff7b006b 100%);
+    color: white;
+    padding: 1.5rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-.logo {
-    font-size: 1.25rem;
+
+.header .logo {
+    font-size: 1.5rem;
     font-weight: 700;
-    color: #ff7a00; /* tono naranja coherente */
 }
-.user-info {
+
+.header .user-info {
     display: flex;
     align-items: center;
-    gap: 1rem;
-}
-.user-name {
-    color: #333;
-    font-weight: 600;
-}
-.logout-btn {
-    background: #ff7a00;
-    color: white;
-    border: none;
-    padding: 0.45rem 0.9rem;
-    border-radius: 8px;
-    text-decoration: none;
-    display: inline-block;
-}
-.container {
-    max-width: 1200px;
-    margin: 1.75rem auto;
-    padding: 0 1rem;
-}
-.action-bar, .filters, .data-table, .stats {
-    background: #fff;
-    padding: 1.25rem;
-    border-radius: 10px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.04);
-    margin-bottom: 1rem;
-}
-.btn {
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-}
-.btn-primary {
-    background: #ff7a00;
-    color: #fff;
-    border: none;
-}
-.btn-secondary {
-    background: #6c757d;
-    color: #fff;
-    border: none;
-}
-.filter-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
-    gap: 0.75rem;
-    margin-top: 0.75rem;
-}
-.data-table table {
-    width: 100%;
-    border-collapse: collapse;
-}
-.data-table th, .data-table td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #eee;
-}
-.badge {
-    padding: 0.25rem 0.6rem;
-    border-radius: 999px;
-    font-size: 0.85rem;
-}
-.badge-manual { background:#fff3e0; color:#bf6b00; }
-.badge-file { background:#e6ffed; color:#137a2b; }
-.badge-system { background:#ffecec; color:#9b2c2c; }
-
-/* responsive */
-@media (max-width: 576px){
-    .header { flex-direction: column; gap: 0.6rem; align-items: flex-start; }
-    .action-buttons { flex-direction: column; }
-}
-
-/* Centrar los botones de acción */
-.action-bar{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 1rem 0; /* opcional, ajusta espacio vertical */
-}
-
-.action-buttons{
-    display: flex;
     gap: 0.5rem;
+}
+
+.header .user-name {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+
+/* ===================================
+   SECCIÓN: Filtros superiores
+   =================================== */
+
+.top-filters {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
     flex-wrap: wrap;
-    justify-content: center; /* asegura que las filas se centren */
+    gap: 1.5rem;
+    justify-content: space-between;
+    align-items: flex-end;
 }
 
-/* versión móvil: botones en columna y centrados */
-@media (max-width: 576px){
-    .action-buttons{
-        flex-direction: column;
-        align-items: center;
-    }
-}
-
-/* Ordenar y alinear filtros */
 .filters-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(140px, 1fr));
-    gap: 0.6rem;
-    align-items: center;
-    width: 100%;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    flex: 1;
+    min-width: 0;
 }
 
-/* cada item controla ancho mínimo del select */
-.filter-item select.form-control {
-    min-width: 140px;
-    max-width: 260px;
-}
-
-/* checkbox con mejor alineación */
-.checkbox-item {
+.filter-item {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 0.5rem;
-    padding-left: 0.25rem;
 }
 
-/* área de búsqueda a la derecha */
+.filter-item label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0;
+}
+
 .search-actions {
     display: flex;
     gap: 0.5rem;
+    align-items: flex-end;
+}
+
+
+/* ===================================
+   SECCIÓN: Data table container
+   =================================== */
+
+.data-table {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.data-table h4,
+.data-table h5 {
+    margin-bottom: 1rem;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+
+/* ===================================
+   SECCIÓN: Tabla con scroll
+   =================================== */
+
+.table-wrapper {
+    max-height: 500px;
+    overflow: auto;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.table-wrapper--padded {
+    padding: 1rem;
+}
+
+/* Tabla base */
+.table {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+
+/* ===================================
+   SECCIÓN: Header de tabla (sticky)
+   =================================== */
+
+.table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f8f9fa;
+}
+
+.table thead th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 12px 8px;
+    background: #f8f9fa;
+}
+
+
+/* ===================================
+   SECCIÓN: Body de tabla
+   =================================== */
+
+.table tbody td,
+.table tbody th {
+    font-size: 0.875rem;
+    padding: 10px 8px;
+    vertical-align: middle;
+}
+
+.table tbody tr:hover {
+    background-color: #f1f3f5;
+    cursor: pointer;
+}
+
+
+/* ===================================
+   SECCIÓN: Columna fija (checkbox)
+   =================================== */
+
+.table th:nth-child(1),
+.table td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 5;
+    border-right: 2px solid #dee2e6;
+    text-align: center;
+    width: 40px;
+    min-width: 40px;
+}
+
+.table thead th:nth-child(1) {
+    background: #f8f9fa;
+    z-index: 15;
+}
+
+/* Centrar checkboxes */
+.table .form-check-input {
+    margin: 0;
+    cursor: pointer;
+}
+
+
+/* ===================================
+   SECCIÓN: Scrollbar personalizado
+   =================================== */
+
+.table-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+
+/* ===================================
+   SECCIÓN: Action Bar (Barra de acciones)
+   =================================== */
+
+.action-bar {
+    display: flex;
+    justify-content: center;
     align-items: center;
-    justify-content: flex-end;
-    min-width: 320px;
+    padding: 1.5rem 0;
+    margin-top: 1rem;
 }
 
-/* en pantallas pequeñas apilar filtros y búsqueda */
-@media (max-width: 768px) {
-    .filters-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .search-actions {
-        width: 100%;
-        justify-content: space-between;
-        margin-top: 0.5rem;
-    }
+.action-bar--start {
+    justify-content: flex-start;
 }
 
-/* opcional: ajusta spacing general en top-filters */
-.top-filters {
+.action-buttons {
     display: flex;
     gap: 1rem;
-    justify-content: space-between;
-    align-items: center;
     flex-wrap: wrap;
+    justify-content: center;
+}
+
+.action-buttons .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    padding: 0.65rem 1.5rem;
+    transition: all 0.2s ease;
+    min-width: 140px;
+    justify-content: center;
+}
+
+.action-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+
+/* ===================================
+   SECCIÓN: Formulario Manual
+   =================================== */
+
+.manual-form .form-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.375rem;
+}
+
+
+/* ===================================
+   SECCIÓN: Badge para valores
+   =================================== */
+
+.badge-factor {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+
+/* ===================================
+   SECCIÓN: Responsive
+   =================================== */
+
+@media (max-width: 992px) {
+    .top-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .search-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .search-actions .btn {
+        flex: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .header .logo {
+        font-size: 1.2rem;
+    }
+    
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .data-table {
+        padding: 1rem;
+    }
+    
+    /* Tabla con altura reducida */
+    .table-wrapper {
+        max-height: 400px;
+    }
+    
+    /* Botones apilados verticalmente */
+    .action-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Ajustar tamaños de fuente */
+    .table thead th,
+    .table tbody td,
+    .table tbody th {
+        font-size: 0.75rem;
+        padding: 8px 6px;
+    }
+}
+
+@media (max-width: 576px) {
+    .header .logo {
+        font-size: 1rem;
+    }
+    
+    .table-wrapper {
+        max-height: 300px;
+    }
+    
+    .table thead th,
+    .table tbody td,
+    .table tbody th {
+        font-size: 0.7rem;
+        padding: 6px 4px;
+    }
 }
