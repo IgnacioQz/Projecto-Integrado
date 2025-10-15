@@ -1,0 +1,47 @@
+/* Estilos específicos para la vista de carga manual */
+
+.table-wrapper--padded {
+    padding: 1rem;
+}
+
+/* Action bar: variante inicio (alinear a la izquierda) */
+.action-bar--start {
+    justify-content: flex-start;
+}
+
+/* Evita estilos inline duplicados, usa utilidades y clases ya definidas en main.css */
+.manual-form .form-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Ajustes visuales de la vista previa */
+.data-table h5 {
+    margin-bottom: 0.5rem;
+}
+
+/* Asegura que la tabla quede dentro de la tarjeta y con borde sutil */
+.table-wrapper {
+    max-height: 360px;
+    overflow: auto;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 8px;
+    background: #fff;
+}
+
+/* Espaciado entre botones */
+.action-buttons .btn {
+    margin-right: 0.5rem;
+}
+
+/* Último botón sin margen extra */
+.action-buttons .btn:last-child {
+    margin-right: 0;
+}
+
+/* Responsive: adaptar formulario y tabla */
+@media (max-width: 768px) {
+    .table-wrapper { max-height: 260px; }
+    .action-buttons { flex-direction: column; gap: 0.5rem; align-items: stretch; }
+}

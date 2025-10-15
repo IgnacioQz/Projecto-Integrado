@@ -1,11 +1,100 @@
 {% extends 'base.html' %}
+{% load static %}
+
 {% block title %}
-    <title>Main</title>
+    <title>NUAM - Mantenedor de Calificaciones Tributarias</title>
 {% endblock %}
 
-{% block styles %}{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+{% endblock %}
 
 {% block main %}
-    <h1>Página principal</h1>
-    <p>Contenido de la página principal.</p>
+    <div class="header">
+        <div class="logo">NUAM - Mantenedor de Calificaciones</div>
+        <div class="user-info">
+            <span class="user-name">
+                {% if user.is_authenticated %}
+                    {{ user.username }}
+                {% else %}
+                    Invitado
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Barra superior: filtros / búsqueda -->
+        <div class="top-filters">
+            <div class="filters-grid">
+                <div class="filter-item">
+                    <select class="form-control form-control-sm">
+                        <option>Mercado</option>
+                        <option>ACCIONES</option>
+                        <option>Renta Fija</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <select class="form-control form-control-sm">
+                        <option>Origen</option>
+                        <option>CORREDOR</option>
+                        <option>manual</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <select class="form-control form-control-sm">
+                        <option>Periodo Comercial</option>
+                        <option>2025</option>
+                    </select>
+                </div>
+                <div class="filter-item checkbox-item">
+                    <input class="form-check-input" type="checkbox" id="pendiente">
+                    <label class="form-check-label ms-2" for="pendiente">Calificación Pendiente</label>
+                </div>
+            </div>
+
+            <div class="search-actions">
+                <div class="input-group input-group-sm" style="min-width:260px;">
+                    <input type="text" class="form-control" placeholder="Buscar instrumento...">
+                    <button class="btn btn-primary">🔍 BUSCAR</button>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm ms-2">LIMPIAR</button>
+            </div>
+        </div>
+
+        <!-- Tabla con scroll -->
+        <div class="data-table">
+            <h4>Calificaciones Tributarias</h4>
+            <div class="table-wrapper">
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ejercicio</th><th>Mercado</th><th>Instrumento</th><th>Fecha</th><th>Tipo Sociedad</th><th>Valor Histórico</th><th>Tipo de Ingreso</th><th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2025</td><td>CL</td><td>ABC-001</td><td>2025-10-15</td><td>SA</td><td>$1,250,000</td><td><span class="badge badge-manual">Ingreso Manual</span></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>2025</td><td>PE</td><td>XYZ-002</td><td>2025-10-14</td><td>SRL</td><td>$890,500</td><td><span class="badge badge-file">Carga de Archivo</span></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>2025</td><td>CO</td><td>DEF-003</td><td>2025-10-13</td><td>SA</td><td>$2,300,000</td><td><span class="badge badge-manual">Ingreso Manual</span></td><td></td>
+                        </tr>
+                        <!-- más filas... -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Botones de acción centrados -->
+        <div class="action-bar">
+            <div class="action-buttons">
+                <a href="{% url 'cargaManual' %}" button class="btn btn-primary">➕ Ingreso Manual</a>
+                <button class="btn btn-secondary">📁 Carga Masiva</button>
+                <button class="btn btn-primary">📋 Ver Auditoría</button>
+            </div>
+        </div>
+    </div>
 {% endblock %}

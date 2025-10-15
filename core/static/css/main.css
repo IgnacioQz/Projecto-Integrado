@@ -1,0 +1,166 @@
+/* estilos específicos para main (movidos desde main.html) */
+
+.header {
+    background: #ffffff;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 10px;
+}
+.logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ff7a00; /* tono naranja coherente */
+}
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.user-name {
+    color: #333;
+    font-weight: 600;
+}
+.logout-btn {
+    background: #ff7a00;
+    color: white;
+    border: none;
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-block;
+}
+.container {
+    max-width: 1200px;
+    margin: 1.75rem auto;
+    padding: 0 1rem;
+}
+.action-bar, .filters, .data-table, .stats {
+    background: #fff;
+    padding: 1.25rem;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+    margin-bottom: 1rem;
+}
+.btn {
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-primary {
+    background: #ff7a00;
+    color: #fff;
+    border: none;
+}
+.btn-secondary {
+    background: #6c757d;
+    color: #fff;
+    border: none;
+}
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+.data-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.data-table th, .data-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #eee;
+}
+.badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+}
+.badge-manual { background:#fff3e0; color:#bf6b00; }
+.badge-file { background:#e6ffed; color:#137a2b; }
+.badge-system { background:#ffecec; color:#9b2c2c; }
+
+/* responsive */
+@media (max-width: 576px){
+    .header { flex-direction: column; gap: 0.6rem; align-items: flex-start; }
+    .action-buttons { flex-direction: column; }
+}
+
+/* Centrar los botones de acción */
+.action-bar{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem 0; /* opcional, ajusta espacio vertical */
+}
+
+.action-buttons{
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center; /* asegura que las filas se centren */
+}
+
+/* versión móvil: botones en columna y centrados */
+@media (max-width: 576px){
+    .action-buttons{
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* Ordenar y alinear filtros */
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(140px, 1fr));
+    gap: 0.6rem;
+    align-items: center;
+    width: 100%;
+}
+
+/* cada item controla ancho mínimo del select */
+.filter-item select.form-control {
+    min-width: 140px;
+    max-width: 260px;
+}
+
+/* checkbox con mejor alineación */
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 0.25rem;
+}
+
+/* área de búsqueda a la derecha */
+.search-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 320px;
+}
+
+/* en pantallas pequeñas apilar filtros y búsqueda */
+@media (max-width: 768px) {
+    .filters-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .search-actions {
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+    }
+}
+
+/* opcional: ajusta spacing general en top-filters */
+.top-filters {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}

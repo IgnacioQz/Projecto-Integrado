@@ -38,3 +38,6 @@ def logout_view(request):
     # elimina la sesión del usuario
     logout(request)
     return redirect('welcome')
+
+def carga_manual_view(request):
+    return render(request, 'cargaManual.html')
