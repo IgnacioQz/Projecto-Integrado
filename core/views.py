@@ -1,11 +1,14 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
-# Create your views here.
-def welcome(request):
+def welcome_view(request):
     return render(request, 'welcome.html')
 
-def login(request):
+def login_view(request):
+    # visual-only: no procesamiento POST, no autenticación
     return render(request, 'login.html')
 
-def main(request):
+def main_view(request):
     return render(request, 'main.html')
+
+def logout_view(request):
+    return redirect('welcome')

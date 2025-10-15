@@ -1,17 +1,6 @@
-container-sm {
+.container-sm {
     margin-top: 100px;
     text-align: center;
-}
-
-.welcome-hero {
-    min-height: 75vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    gap: 1rem;
-    padding: 2rem;
 }
 
 .btn-primary {

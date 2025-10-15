@@ -20,3 +20,14 @@ body{
 .navbar .nav-link {
     color: #ffffff !important;
 }
+
+.container-hero {
+    min-height: 75vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    padding: 2rem;
+}

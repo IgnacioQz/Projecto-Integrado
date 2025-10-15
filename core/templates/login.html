@@ -1,18 +1,30 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}
     <title>Login</title>
 {% endblock %}
 
-{% block styles %}
-{% endblock %}
+{% block styles %}{% endblock %}
 
 {% block main %}
-    <h1>Iniciar sesión</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Iniciar sesión</button>
-    </form>
+    <div class="container-sm container-hero">
+        <h1>Iniciar sesión</h1>
+
+        <!-- Formulario visual, sin acción ni CSRF (sin lógica servidor) -->
+        <form id="loginForm" novalidate>
+            <div class="mb-3">
+                <label for="inputUsername" class="form-label">Usuario</label>
+                <input type="text" name="username" class="form-control" id="inputUsername" placeholder="Tu usuario">
+            </div>
+
+            <div class="mb-3">
+                <label for="inputPassword" class="form-label">Contraseña</label>
+                <input type="password" name="password" class="form-control" id="inputPassword" placeholder="Tu contraseña">
+            </div>
+
+            <button type="button" class="btn btn-primary" disabled>Iniciar Sesión</button>
+        </form>
+    </div>
 {% endblock %}
 
