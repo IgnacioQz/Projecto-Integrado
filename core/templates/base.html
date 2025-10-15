@@ -23,15 +23,10 @@
     </div>
 </nav>
 
-<div class="container mt-3">
-  {% if messages %}
-    {% for msg in messages %}
-      <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
-    {% endfor %}
-  {% endif %}
+<!-- wrapper global: aquí está .container-hero definido en styles.css -->
+<div class="container-hero">
+    {% block main %}{% endblock %}
 </div>
-
-{% block main %}{% endblock %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
