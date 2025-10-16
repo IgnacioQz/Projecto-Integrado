@@ -41,3 +41,6 @@ def logout_view(request):
 
 def carga_manual_view(request):
     return render(request, 'cargaManual.html')
+
+def carga_masiva_view(request):
+    return render(request, 'cargaMasiva.html')

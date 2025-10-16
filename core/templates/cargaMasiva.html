@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    <title>Carga Masiva - NUAM</title>
+{% endblock %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/cargaMasiva.css' %}">
+{% endblock %}
+
+{% block main %}
+    <div class="modal-overlay">
+        <div class="modal-container-upload">
+            <div class="modal-header">
+                <h2>📁 Carga Masiva de Calificaciones</h2>
+                <p class="modal-subtitle">Importe calificaciones desde archivo </p>
+            </div>
+
+            <div class="modal-body">
+                <!-- Zona de carga de archivo -->
+                <div class="upload-section">
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">📂</div>
+                        <h3>Arrastre su archivo  aquí</h3>
+                        <p>o haga clic para seleccionar</p>
+                        <input type="file" id="fileInput" accept="." hidden>
+                        <button type="button" class="btn-select-file" id="btnSelectFile">
+                            Seleccionar Archivo
+                        </button>
+                    </div>
+
+                    <!-- Información del archivo cargado -->
+                    <div class="file-info" id="fileInfo">
+                        <div class="file-info-content">
+                            <div class="file-icon">📄</div>
+                            <div class="file-details">
+                                <h4 id="fileName">calificaciones_tributarias_2025.</h4>
+                                <p id="fileSize">45.3 KB - 125 registros detectados</p>
+                            </div>
+                            <button type="button" class="btn-remove-file" id="btnRemoveFile">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Validaciones -->
+                <div class="validation-section" id="validationSection">
+                    <h3 class="section-title">🔍 Validación de Datos</h3>
+                    
+                    <div class="validation-summary">
+                        <div class="validation-item validation-success">
+                            <span class="validation-icon">✓</span>
+                            <span class="validation-text">Formato  válido</span>
+                        </div>
+                        <div class="validation-item validation-success">
+                            <span class="validation-icon">✓</span>
+                            <span class="validation-text">Estructura de columnas correcta</span>
+                        </div>
+                        <div class="validation-item validation-warning" id="warningItem">
+                            <span class="validation-icon">⚠</span>
+                            <span class="validation-text">3 registros con advertencias</span>
+                        </div>
+                        <div class="validation-item validation-error" id="errorItem">
+                            <span class="validation-icon">✕</span>
+                            <span class="validation-text">2 registros con errores</span>
+                        </div>
+                    </div>
+
+                    <div class="validation-stats">
+                        <div class="stat-card stat-total">
+                            <div class="stat-number" id="totalRecords">125</div>
+                            <div class="stat-label">Total Registros</div>
+                        </div>
+                        <div class="stat-card stat-valid">
+                            <div class="stat-number" id="validRecords">120</div>
+                            <div class="stat-label">Válidos</div>
+                        </div>
+                        <div class="stat-card stat-warning">
+                            <div class="stat-number" id="warningRecords">3</div>
+                            <div class="stat-label">Advertencias</div>
+                        </div>
+                        <div class="stat-card stat-error">
+                            <div class="stat-number" id="errorRecords">2</div>
+                            <div class="stat-label">Errores</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Previsualización de datos -->
+                <div class="preview-section" id="previewSection">
+                    <h3 class="section-title">👁️ Previsualización de Datos</h3>
+                    
+                    <div class="preview-controls">
+                        <div class="preview-info">
+                            <span>Mostrando primeros 5 registros de <strong id="previewTotal">125</strong></span>
+                        </div>
+                        <div class="preview-filters">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" id="showErrors" checked>
+                                <span>Mostrar errores</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" id="showWarnings" checked>
+                                <span>Mostrar advertencias</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="table-preview-wrapper">
+                        <table class="table-preview">
+                            <thead>
+                                <tr>
+                                    <th class="col-status">Estado</th>
+                                    <th>Ejercicio</th>
+                                    <th>Mercado</th>
+                                    <th>Instrumento</th>
+                                    <th>Fecha Pago</th>
+                                    <th>Secuencia</th>
+                                    <th>Dividendo</th>
+                                    <th>Valor Histórico</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="previewTableBody">
+                                <!-- Ejemplo de fila válida -->
+                                <tr class="row-valid">
+                                    <td class="col-status">
+                                        <span class="status-badge status-ok">✓</span>
+                                    </td>
+                                    <td>2025</td>
+                                    <td>Acciones</td>
+                                    <td>BBVA</td>
+                                    <td>2025-05-15</td>
+                                    <td>10001</td>
+                                    <td>0.00</td>
+                                    <td>1,250,000</td>
+                                    <td>Dividendo ordinario</td>
+                                </tr>
+                                <!-- Ejemplo de fila con advertencia -->
+                                <tr class="row-warning">
+                                    <td class="col-status">
+                                        <span class="status-badge status-warning" title="Fecha en el pasado">⚠</span>
+                                    </td>
+                                    <td>2025</td>
+                                    <td>CFI</td>
+                                    <td>BONOS XYZ</td>
+                                    <td>2024-12-20</td>
+                                    <td>10002</td>
+                                    <td>0.00</td>
+                                    <td>890,500</td>
+                                    <td>Pago cupón</td>
+                                </tr>
+                                <!-- Ejemplo de fila con error -->
+                                <tr class="row-error">
+                                    <td class="col-status">
+                                        <span class="status-badge status-error" title="Secuencia menor a 10000">✕</span>
+                                    </td>
+                                    <td>2025</td>
+                                    <td>Fondos Mutuos</td>
+                                    <td>TELEFÓNICA</td>
+                                    <td>2025-07-10</td>
+                                    <td class="cell-error">9500</td>
+                                    <td>0.00</td>
+                                    <td>2,100,000</td>
+                                    <td>Dividendo extraordinario</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="preview-footer">
+                        <small class="text-muted">
+                            💡 Los registros con errores no serán procesados. Las advertencias permiten continuar.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <a href="{% url 'main' %}" class="btn-modal btn-cancel">✕ Cancelar</a>
+                <button type="button" class="btn-modal btn-validate" id="btnValidate">
+                    🔍 Validar Archivo
+                </button>
+                <button type="button" class="btn-modal btn-import" id="btnImport">
+                    📥 Importar Calificaciones
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
