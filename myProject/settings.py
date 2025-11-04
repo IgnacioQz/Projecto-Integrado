@@ -9,18 +9,21 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+import environ
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env(DEBUG = (bool, False))  #creamos el lector
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))  #Indicamos la ubicacion
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-7#$(-id$kk^q^xs6e)3(kweos*0t=@)kv2)azj78ph*u_do_qy'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -76,11 +79,11 @@ WSGI_APPLICATION = 'myProject.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "nuam_db",          # 👈 nombre exacto de tu base en pgAdmin
-        "USER": "nuam_user",        # 👈 el usuario que creaste (o 'postgres' si usas el admin)
-        "PASSWORD": "nuamcontraseña", # 👈 la contraseña que le diste al usuario
-        "HOST": "127.0.0.1",        # 👈 localhost o 127.0.0.1
-        "PORT": "5432",             # 👈 puerto por defecto de Postgres
+        "NAME": env("NAME"),          # 👈 nombre exacto de tu base en pgAdmin
+        "USER": env("USER"),          # 👈 usuario de pgAdmin
+        "PASSWORD": env("PASSWORD"),  # 👈 la contraseña que definiste
+        "HOST": env("HOST"),          # 👈 probablemente localhost 
+        "PORT": env("PORT"),          # 👈 el puerto que usas, por defecto 5432
     }
 }
 

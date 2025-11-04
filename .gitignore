@@ -1,3 +1,8 @@
-venv/
+#Entorno Virtual
+venv/           
+#pycache 
 __pycache__/
-*.sqlite3
+#Archivos de entorno
+.env
+#Base de datos sqlite
+db.sqlite3
