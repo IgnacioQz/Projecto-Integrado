@@ -74,9 +74,13 @@ WSGI_APPLICATION = 'myProject.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "nuam_db",          # 👈 nombre exacto de tu base en pgAdmin
+        "USER": "nuam_user",        # 👈 el usuario que creaste (o 'postgres' si usas el admin)
+        "PASSWORD": "nuamcontraseña", # 👈 la contraseña que le diste al usuario
+        "HOST": "127.0.0.1",        # 👈 localhost o 127.0.0.1
+        "PORT": "5432",             # 👈 puerto por defecto de Postgres
     }
 }
 
