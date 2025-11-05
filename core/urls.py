@@ -2,10 +2,20 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Páginas base / auth
     path('', views.welcome_view, name='welcome'),
     path('login/', views.login_view, name='login'),
-    path('main/', views.main_view, name='main'),
     path('logout/', views.logout_view, name='logout'),
-    path('carga_manual/', views.carga_manual_view, name='cargaManual'),
+    path('main/', views.main_view, name='main'),
+
+    # Sandbox (menú de pruebas)
+    path('sandbox/', views.sandbox_view, name='sandbox'),
+
+    # CRUD de calificaciones (sandbox)
+    path('calificaciones/', views.calificacion_list, name='calificacion_list'),
+    path('calificaciones/nueva/', views.carga_manual_view, name='carga_manual'),
+    path('calificaciones/<int:pk>/editar/', views.calificacion_edit, name='calificacion_edit'),
+
+    # Mockups 
     path('carga_masiva/', views.carga_masiva_view, name='cargaMasiva'),
 ]

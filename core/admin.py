@@ -1,66 +1,78 @@
+# core/admin.py
 from django.contrib import admin
-from django import forms
-from .models import SimpleUser
+from .models import (
+    TblInstrumento, TblTipoIngreso, TblArchivoFuente,
+    TblCalificacion, TblFactorValor
+)
 
-class SimpleUserCreationForm(forms.ModelForm):
-    password1 = forms.CharField(label='Contraseña', widget=forms.PasswordInput)
-    password2 = forms.CharField(label='Confirmar contraseña', widget=forms.PasswordInput)
+# ===============================================================
+# Admin: Instrumento
+# ===============================================================
+@admin.register(TblInstrumento)
+class InstrumentoAdmin(admin.ModelAdmin):
+    # columnas visibles en la tabla del panel admin
+    list_display = ("instrumento_id", "nombre", "tipo_instrumento")
 
-    class Meta:
-        model = SimpleUser
-        fields = ('username', 'email')
+    # campos por los que se puede buscar (barra de búsqueda)
+    search_fields = ("nombre", "tipo_instrumento")
 
-    def clean_password2(self):
-        p1 = self.cleaned_data.get('password1')
-        p2 = self.cleaned_data.get('password2')
-        if not p1 or p1 != p2:
-            raise forms.ValidationError('Las contraseñas no coinciden.')
-        return p2
+# ===============================================================
+# Admin: Tipo de Ingreso
+# ===============================================================
+@admin.register(TblTipoIngreso)
+class TipoIngresoAdmin(admin.ModelAdmin):
+    # columnas visibles
+    list_display = ("tipo_ingreso_id", "nombre_tipo_ingreso", "prioridad")
 
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.set_password(self.cleaned_data['password1'])
-        if commit:
-            user.save()
-        return user
+    # define el orden por defecto de las filas
+    ordering = ("prioridad",)
 
-class SimpleUserChangeForm(forms.ModelForm):
-    # campo opcional para cambiar contraseña al editar
-    password = forms.CharField(label='Contraseña (dejar en blanco para no cambiar)',
-                               widget=forms.PasswordInput, required=False)
-
-    class Meta:
-        model = SimpleUser
-        fields = ('username', 'email', 'password')
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        pw = self.cleaned_data.get('password')
-        if pw:
-            user.set_password(pw)
-        if commit:
-            user.save()
-        return user
-
-@admin.register(SimpleUser)
-class SimpleUserAdmin(admin.ModelAdmin):
-    form = SimpleUserChangeForm
-    add_form = SimpleUserCreationForm
-    list_display = ('username', 'email')
-
-    add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('username', 'email', 'password1', 'password2'),
-        }),
-    )
-    fieldsets = (
-        (None, {'fields': ('username', 'email', 'password')}),
+# ===============================================================
+# Admin: Archivo Fuente (cargas masivas)
+# ===============================================================
+@admin.register(TblArchivoFuente)
+class ArchivoFuenteAdmin(admin.ModelAdmin):
+    # columnas que se muestran en la tabla
+    list_display = (
+        "archivo_fuente_id",
+        "nombre_archivo",
+        "ruta_almacenamiento",
+        "fecha_subida",
+        "usuario",
     )
 
-    def get_fieldsets(self, request, obj=None):
-        # al crear devuelve add_fieldsets; al editar usa los fieldsets normales
-        if obj is None:
-            return self.add_fieldsets
-        return super().get_fieldsets(request, obj)
+    # activa la búsqueda rápida por nombre o ruta
+    search_fields = ("nombre_archivo", "ruta_almacenamiento")
 
+# ===============================================================
+# Admin: Calificación Tributaria
+# ===============================================================
+@admin.register(TblCalificacion)
+class CalificacionAdmin(admin.ModelAdmin):
+    # columnas visibles en la lista de calificaciones
+    list_display = (
+        "calificacion_id",
+        "ejercicio",
+        "mercado",
+        "instrumento",
+        "secuencia_evento",
+        "fecha_creacion",
+    )
+
+    # filtros laterales (sidebar del admin)
+    list_filter = ("ejercicio", "mercado", "instrumento")
+
+    # campos que admite el buscador del admin
+    search_fields = ("instrumento__nombre",)
+    # nota: el doble guion bajo "__" permite buscar por campo de relación ForeignKey
+
+# ===============================================================
+# Admin: Factor Valor (factores 8..37)
+# ===============================================================
+@admin.register(TblFactorValor)
+class FactorValorAdmin(admin.ModelAdmin):
+    # columnas que se mostrarán en la lista del admin
+    list_display = ("id", "calificacion", "posicion", "valor")
+
+    # permite filtrar por posición (ej. ver solo factores 8..19 o 20..37)
+    list_filter = ("posicion",)
