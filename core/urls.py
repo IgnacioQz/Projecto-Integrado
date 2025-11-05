@@ -13,10 +13,9 @@ urlpatterns = [
 
     # CRUD de calificaciones (sandbox)
     path('calificaciones/', views.calificacion_list, name='calificacion_list'),
-    path('calificaciones/nueva/', views.calificacion_create, name='calificacion_create'),
+    path('calificaciones/nueva/', views.carga_manual_view, name='carga_manual'),
     path('calificaciones/<int:pk>/editar/', views.calificacion_edit, name='calificacion_edit'),
 
     # Mockups 
-    path('carga_manual/', views.carga_manual_view, name='cargaManual'),
     path('carga_masiva/', views.carga_masiva_view, name='cargaMasiva'),
 ]

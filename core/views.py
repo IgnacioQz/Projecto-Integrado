@@ -65,8 +65,38 @@ def logout_view(request):
 # =============================================================================
 # Mockups 
 # =============================================================================
+@login_required(login_url="login")
+@transaction.atomic
 def carga_manual_view(request):
-    return render(request, "cargaManual.html")
+    """
+    PASO 1: Crear calificación (datos básicos).
+    Migración de funcionalidad desde calificacion_create al mockup cargaManual.html
+    
+    GET  -> muestra form con campos base de TblCalificacion
+    POST -> valida y persiste; setea `usuario` con request.user;
+            redirige al PASO 2 para ingresar montos por factor.
+    """
+    if request.method == "POST":
+        form = CalificacionBasicaForm(request.POST)
+        if form.is_valid():
+            calif = form.save(commit=False)
+            calif.usuario = request.user  # trazabilidad: quién creó/modificó
+            calif.save()
+
+            messages.success(
+                request,
+                "Calificación creada exitosamente. Continúa con los montos por factor."
+            )
+            # Redirige al PASO 2 (edición de montos 8..37)
+            return redirect("calificacion_edit", pk=calif.pk)
+
+        # Form inválido -> re-render con errores
+        messages.error(request, "Por favor corrige los errores en el formulario.")
+        return render(request, "cargaManual.html", {"form": form})
+
+    # GET - Mostrar formulario vacío
+    form = CalificacionBasicaForm()
+    return render(request, "cargaManual.html", {"form": form})
 
 
 def carga_masiva_view(request):
