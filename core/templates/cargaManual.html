@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-    <title>Ingresar Calificación - NUAM</title>
+    Ingresar Calificación - NUAM
 {% endblock %}
 
 {% block styles %}
@@ -17,84 +17,46 @@
             </div>
 
             <div class="modal-body">
-                <!-- Sección: Datos Básicos -->
-                <div class="form-section">
-                    <div class="form-section-title">📋 Datos Básicos</div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="mercado">Mercado <span class="required">*</span></label>
-                            <select id="mercado" class="form-select-modal" disabled>
-                                <option>Acciones</option>
-                            </select>
-                            <small class="text-muted" style="margin-top: 4px; font-size: 0.8rem;">Valor precargado del mantenedor</small>
-                        </div>
+                {% if messages %}
+                    {% for m in messages %}
+                        <div class="alert alert-{{ m.tags }} mb-3">{{ m }}</div>
+                    {% endfor %}
+                {% endif %}
 
-                        <div class="form-group">
-                            <label for="instrumento">Instrumento <span class="required">*</span></label>
-                            <input type="text" id="instrumento" class="form-control-modal" placeholder="Ej: BBVA, BONOS XYZ">
-                        </div>
-                    </div>
+                <form method="post" novalidate>
+                    {% csrf_token %}
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="secuencia">Secuencia Evento <span class="required">*</span></label>
-                            <input type="number" id="secuencia" class="form-control-modal" value="10001" min="10000">
-                            <small class="text-muted" style="margin-top: 4px; font-size: 0.8rem;">Mayor a 10.000</small>
+                    <fieldset class="border p-3 mb-3 rounded">
+                        <legend class="float-none w-auto px-2">Datos de la calificación</legend>
+                        <div class="row">
+                            {% for field in form %}
+                                <div class="col-md-4 mb-2">
+                                    <label class="form-label">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                                    {{ field }}
+                                    <div class="text-danger small">{{ field.errors }}</div>
+                                </div>
+                            {% endfor %}
                         </div>
+                    </fieldset>
 
-                        <div class="form-group">
-                            <label for="dividendo">Dividendo</label>
-                            <input type="number" id="dividendo" class="form-control-modal" value="0" step="0.01">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="fecha-pago">Fecha Pago <span class="required">*</span></label>
-                            <input type="date" id="fecha-pago" class="form-control-modal">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="valor-historico">Valor Histórico <span class="required">*</span></label>
-                            <input type="number" id="valor-historico" class="form-control-modal" placeholder="0.00" step="0.01">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="ano">Año <span class="required">*</span></label>
-                            <select id="ano" class="form-select-modal" disabled>
-                                <option>2025</option>
-                            </select>
-                            <small class="text-muted" style="margin-top: 4px; font-size: 0.8rem;">Valor precargado del mantenedor</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="factor-actualizacion">Factor de Actualización</label>
-                            <input type="number" id="factor-actualizacion" class="form-control-modal" value="0" step="0.0001">
-                        </div>
-                    </div>
-
-                    <div class="form-row full-width">
-                        <div class="form-group">
-                            <label for="descripcion">Descripción <span class="required">*</span></label>
-                            <textarea id="descripcion" class="form-control-modal" rows="3" placeholder="Ingrese una descripción detallada..."></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sección: Opciones Adicionales -->
-                <div class="form-section">
-                    <div class="form-section-title">⚙️ Opciones Adicionales</div>
-                    
-                    <div class="checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="isfut-si">
-                            <span>Acogido ISFUT</span>
-                        </label>
-                    </div>
-                </div>
+                    <fieldset class="border p-3 rounded">
+                        <legend class="float-none w-auto px-2">Factores (posiciones 8..37)</legend>
+                        <table class="table table-sm">
+                            <thead><tr><th>Posición</th><th>Valor (0..1)</th></tr></thead>
+                            <tbody>
+                                {% for f in formset %}
+                                    <tr>
+                                        <td>{{ f.posicion }}</td>
+                                        <td>{{ f.valor }}</td>
+                                    </tr>
+                                    {% if f.errors %}
+                                        <tr><td colspan="2" class="text-danger small">{{ f.errors }}</td></tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </fieldset>
+                </form>
             </div>
 
             <div class="modal-footer">
