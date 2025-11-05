@@ -76,7 +76,7 @@
                 <table class="table table-sm table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th><input type="checkbox" class="form-check-input"></th>
+                            <th><input type="checkbox" id="checkbox-all" class="form-check-input"></th>
                             <th>ID</th>
                             <th>Ejercicio</th>
                             <th>Mercado</th>
@@ -120,7 +120,7 @@
                     <tbody>
                         {% for it in items %}
                         <tr>
-                            <td><input type="checkbox" class="form-check-input" data-id="{{ it.pk }}"></td>
+                            <td><input type="checkbox" class="form-check-input row-checkbox" data-id="{{ it.pk }}"></td>
                             <td class="fw-bold">{{ it.calificacion_id }}</td>
                             <td>{{ it.ejercicio }}</td>
                             <td><span class="badge bg-secondary">{{ it.mercado }}</span></td>
@@ -135,41 +135,41 @@
                                     <span class="badge bg-light text-dark">No</span>
                                 {% endif %}
                             </td>
-                            <!-- Factores 8-37: valores desde factores_dict preparado en la vista -->
-                            <td>{{ it.factores_dict.8|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.9|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.10|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.11|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.12|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.13|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.14|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.15|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.16|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.17|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.18|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.19|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.20|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.21|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.22|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.23|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.24|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.25|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.26|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.27|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.28|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.29|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.30|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.31|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.32|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.33|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.34|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.35|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.36|floatformat:4|default:"-" }}</td>
-                            <td>{{ it.factores_dict.37|floatformat:4|default:"-" }}</td>
+                            <!-- Factores 8-37 -->
+                            <td>{{ it.factores_dict.8|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.9|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.10|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.11|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.12|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.13|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.14|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.15|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.16|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.17|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.18|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.19|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.20|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.21|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.22|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.23|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.24|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.25|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.26|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.27|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.28|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.29|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.30|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.31|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.32|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.33|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.34|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.35|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.36|floatformat:8|default:"-" }}</td>
+                            <td>{{ it.factores_dict.37|floatformat:8|default:"-" }}</td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="38" class="text-center text-muted py-5">
+                            <td colspan="39" class="text-center text-muted py-5">
                                 <div class="mb-2">📭</div>
                                 <p class="mb-1">No hay calificaciones registradas</p>
                                 <small>Haz clic en "Ingresar" para crear una nueva calificación</small>
@@ -184,10 +184,10 @@
         <!-- Barra de acciones inferior -->
         <div class="action-bar">
             <div class="action-buttons">
-                <button class="btn btn-danger">🗑️ Eliminar</button>
+                <button class="btn btn-danger" id="btn-eliminar" disabled>🗑️ Eliminar</button>
                 <a href="{% url 'carga_masiva' %}" class="btn btn-secondary">📁 Carga Masiva</a>
                 <a href="{% url 'carga_manual' %}" class="btn btn-success">➕ Ingresar</a>
-                <button class="btn btn-primary">✏️ Modificar</button>
+                <button class="btn btn-primary" id="btn-modificar" disabled>✏️ Modificar</button>
             </div>
         </div>
 
@@ -198,4 +198,90 @@
         </div>
         {% endif %}
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxAll = document.getElementById('checkbox-all');
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        const btnEliminar = document.getElementById('btn-eliminar');
+        const btnModificar = document.getElementById('btn-modificar');
+
+        // Función para actualizar estado de los botones
+        function actualizarBotones() {
+            const seleccionados = document.querySelectorAll('.row-checkbox:checked');
+            const count = seleccionados.length;
+
+            // Botón Eliminar: habilitado si hay al menos uno seleccionado
+            if (count > 0) {
+                btnEliminar.disabled = false;
+                btnEliminar.textContent = `🗑️ Eliminar (${count})`;
+            } else {
+                btnEliminar.disabled = true;
+                btnEliminar.textContent = '🗑️ Eliminar';
+            }
+
+            // Botón Modificar: habilitado SOLO si hay EXACTAMENTE uno seleccionado
+            if (count === 1) {
+                btnModificar.disabled = false;
+                const id = seleccionados[0].getAttribute('data-id');
+                btnModificar.onclick = function() {
+                    window.location.href = `/calificacion/edit/${id}/`;
+                };
+            } else {
+                btnModificar.disabled = true;
+                btnModificar.onclick = null;
+                if (count > 1) {
+                    btnModificar.title = 'Selecciona solo una calificación para modificar';
+                } else {
+                    btnModificar.title = 'Selecciona una calificación para modificar';
+                }
+            }
+
+            // Actualizar checkbox principal
+            if (checkboxes.length > 0) {
+                const todosSeleccionados = Array.from(checkboxes).every(cb => cb.checked);
+                const algunoSeleccionado = Array.from(checkboxes).some(cb => cb.checked);
+                checkboxAll.checked = todosSeleccionados;
+                checkboxAll.indeterminate = algunoSeleccionado && !todosSeleccionados;
+            }
+        }
+
+        // Checkbox principal: seleccionar/deseleccionar todos
+        if (checkboxAll) {
+            checkboxAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => {
+                    cb.checked = this.checked;
+                });
+                actualizarBotones();
+            });
+        }
+
+        // Checkboxes individuales
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', actualizarBotones);
+        });
+
+        // Botón Eliminar (implementar según tus necesidades)
+        btnEliminar.addEventListener('click', function() {
+            const seleccionados = Array.from(document.querySelectorAll('.row-checkbox:checked'));
+            
+            if (seleccionados.length === 0) {
+                alert('Selecciona al menos una calificación para eliminar');
+                return;
+            }
+
+            const mensaje = seleccionados.length === 1 
+                ? '¿Estás seguro de eliminar esta calificación?' 
+                : `¿Estás seguro de eliminar ${seleccionados.length} calificaciones?`;
+            
+            if (confirm(mensaje)) {
+                // TODO: Implementar eliminación
+                alert('Función de eliminación pendiente de implementar');
+            }
+        });
+
+        // Inicializar estado de botones
+        actualizarBotones();
+    });
+    </script>
 {% endblock %}
