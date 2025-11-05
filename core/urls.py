@@ -17,5 +17,5 @@ urlpatterns = [
     path('calificaciones/<int:pk>/editar/', views.calificacion_edit, name='calificacion_edit'),
 
     # Mockups 
-    path('carga_masiva/', views.carga_masiva_view, name='cargaMasiva'),
+    path('carga_masiva/', views.carga_masiva_view, name='carga_masiva'),
 ]

@@ -13,7 +13,7 @@
       <small class="text-muted">— {{ calif.instrumento_text }} ({{ calif.ejercicio }})</small>
     </h3>
     <div>
-      <a href="{% url 'calificacion_list' %}" class="btn btn-outline-secondary btn-sm">← Volver al listado</a>
+      <a href="{% url 'main' %}" class="btn btn-outline-secondary btn-sm">← Volver al Mantenedor</a>
     </div>
   </div>
 
@@ -83,9 +83,6 @@
               </tr>
             </thead>
             <tbody>
-              {# Recorremos todos los campos del form (monto_8..monto_37)
-                 El label ya viene como “8 — Con crédito por IDPC…”
-                 Si prefieres el orden garantizado, puedes ordenar por name. #}
               {% for field in montos_form %}
                 <tr>
                   <td>
@@ -105,14 +102,28 @@
         </div>
 
       </div>
-      <div class="card-footer d-flex gap-2">
-        <!-- Botón para calcular (no guarda en DB) -->
-        <button type="submit" name="action" value="calcular" class="btn btn-secondary">
-          Calcular
+      <div class="modal-footer">
+      <!-- Botón para cancelar y eliminar borrador -->
+        <button type="submit" 
+                name="action" 
+                value="cancelar" 
+                class="btn-modal btn-danger"
+                onclick="return confirm('⚠️ ¿Descartar esta calificación incompleta? Se eliminará de la base de datos.')">
+          🗑️ Cancelar y Eliminar
         </button>
-        <!-- Botón para guardar (upsert en DB) -->
-        <button type="submit" name="action" value="guardar" class="btn btn-primary">
-          Guardar
+      
+        <button type="submit" 
+                name="action" 
+                value="calcular" 
+                class="btn-modal btn-secondary">
+            🧮 Calcular
+        </button>
+      
+        <button type="submit" 
+                name="action" 
+                value="guardar" 
+                class="btn-modal btn-primary">
+            💾 Guardar
         </button>
       </div>
     </div>
