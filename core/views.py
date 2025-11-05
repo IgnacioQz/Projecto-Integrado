@@ -73,9 +73,9 @@ def main_view(request):
         for f in all_factores:
             print(f"    Posición {f.posicion}: {f.valor}")
         
-        # Crear diccionario para el template
+        # Crear diccionario para el template con valores redondeados
         item.factores_dict = {
-            f.posicion: f.valor 
+            f.posicion: _round8(f.valor)
             for f in all_factores
             if 8 <= f.posicion <= 37
         }
