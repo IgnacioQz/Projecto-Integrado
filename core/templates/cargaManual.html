@@ -1,9 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}
-    Ingresar Calificación - NUAM
-{% endblock %}
+{% block title %}Nueva Calificación - NUAM{% endblock %}
 
 {% block styles %}
     <link rel="stylesheet" href="{% static 'css/cargaManual.css' %}">
@@ -13,7 +11,7 @@
     <div class="modal-overlay">
         <div class="modal-container">
             <div class="modal-header">
-                <h2>➕ Ingresar Nueva Calificación Tributaria</h2>
+                <h2>➕ Nueva Calificación Tributaria - Paso 1/2</h2>
             </div>
 
             <div class="modal-body">
@@ -26,42 +24,69 @@
                 <form method="post" novalidate>
                     {% csrf_token %}
 
-                    <fieldset class="border p-3 mb-3 rounded">
-                        <legend class="float-none w-auto px-2">Datos de la calificación</legend>
-                        <div class="row">
+                    <div class="form-section">
+                        <div class="form-section-title">📋 Datos Básicos de la Calificación</div>
+                        
+                        <div class="form-row">
                             {% for field in form %}
-                                <div class="col-md-4 mb-2">
-                                    <label class="form-label">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
-                                    {{ field }}
-                                    <div class="text-danger small">{{ field.errors }}</div>
-                                </div>
+                                {% if field.name != 'isfut' and field.name != 'descripcion' %}
+                                    <div class="form-group">
+                                        <label for="{{ field.id_for_label }}">
+                                            {{ field.label }}
+                                            {% if field.field.required %}<span class="required">*</span>{% endif %}
+                                        </label>
+                                        {{ field }}
+                                        {% if field.errors %}
+                                            <small class="text-danger">{{ field.errors }}</small>
+                                        {% endif %}
+                                        {% if field.help_text %}
+                                            <small class="text-muted">{{ field.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
                             {% endfor %}
                         </div>
-                    </fieldset>
 
-                    <fieldset class="border p-3 rounded">
-                        <legend class="float-none w-auto px-2">Factores (posiciones 8..37)</legend>
-                        <table class="table table-sm">
-                            <thead><tr><th>Posición</th><th>Valor (0..1)</th></tr></thead>
-                            <tbody>
-                                {% for f in formset %}
-                                    <tr>
-                                        <td>{{ f.posicion }}</td>
-                                        <td>{{ f.valor }}</td>
-                                    </tr>
-                                    {% if f.errors %}
-                                        <tr><td colspan="2" class="text-danger small">{{ f.errors }}</td></tr>
-                                    {% endif %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </fieldset>
+                        <!-- Descripción en ancho completo -->
+                        {% with field=form.descripcion %}
+                            {% if field %}
+                                <div class="form-row full-width">
+                                    <div class="form-group">
+                                        <label for="{{ field.id_for_label }}">
+                                            {{ field.label }}
+                                            {% if field.field.required %}<span class="required">*</span>{% endif %}
+                                        </label>
+                                        {{ field }}
+                                        {% if field.errors %}
+                                            <small class="text-danger">{{ field.errors }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+
+                        <!-- Checkbox ISFUT -->
+                        {% with field=form.isfut %}
+                            {% if field %}
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        {{ field }}
+                                        <span>{{ field.label }}</span>
+                                    </label>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+
+                        <div class="alert alert-info mt-3">
+                            ℹ️ <strong>Siguiente paso:</strong> Después de guardar, podrás ingresar los montos por factor (posiciones 8-37).
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <a href="{% url 'calificacion_list' %}" class="btn-modal btn-secondary">✕ Cancelar</a>
+                        <button type="submit" class="btn-modal btn-primary">Continuar →</button>
+                    </div>
                 </form>
-            </div>
-
-            <div class="modal-footer">
-                <a href="{% url 'main' %}" class="btn-modal btn-secondary">✕ Cancelar</a>
-                <button class="btn-modal btn-primary">✓ OK - Continuar</button>
             </div>
         </div>
     </div>
