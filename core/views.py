@@ -360,8 +360,8 @@ def calificacion_delete(request, pk: int):
         messages.success(request, f"✅ Calificación #{calif_id} eliminada correctamente.")
         return redirect("main")
     
-    # GET: mostrar confirmación
-    return render(request, "calificacion_confirm_delete.html", {"calif": calif})
+    # GET: mostrar confirmación (usar el template existente)
+    return render(request, "calificaciones_confirm_deleted.html", {"calif": calif})
 
 
 @login_required(login_url="login")

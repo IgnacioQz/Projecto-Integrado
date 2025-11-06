@@ -70,134 +70,139 @@
             </div>
         </div>
 
-        <!-- Tabla con scroll y datos reales -->
-        <div class="data-table">
-            <div class="table-wrapper">
-                <table class="table table-sm table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th><input type="checkbox" class="form-check-input"></th>
-                            <th>ID</th>
-                            <th>Ejercicio</th>
-                            <th>Mercado</th>
-                            <th>Instrumento</th>
-                            <th>Fecha Pago</th>
-                            <th>Descripción</th>
-                            <th>Secuencia Evento</th>
-                            <th>Acogido ISFUT/ISIFT</th>
-                            <th>Factor 8</th>
-                            <th>Factor 9</th>
-                            <th>Factor 10</th>
-                            <th>Factor 11</th>
-                            <th>Factor 12</th>
-                            <th>Factor 13</th>
-                            <th>Factor 14</th>
-                            <th>Factor 15</th>
-                            <th>Factor 16</th>
-                            <th>Factor 17</th>
-                            <th>Factor 18</th>
-                            <th>Factor 19</th>
-                            <th>Factor 20</th>
-                            <th>Factor 21</th>
-                            <th>Factor 22</th>
-                            <th>Factor 23</th>
-                            <th>Factor 24</th>
-                            <th>Factor 25</th>
-                            <th>Factor 26</th>
-                            <th>Factor 27</th>
-                            <th>Factor 28</th>
-                            <th>Factor 29</th>
-                            <th>Factor 30</th>
-                            <th>Factor 31</th>
-                            <th>Factor 32</th>
-                            <th>Factor 33</th>
-                            <th>Factor 34</th>
-                            <th>Factor 35</th>
-                            <th>Factor 36</th>
-                            <th>Factor 37</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for it in items %}
-                        <tr>
-                            <td><input type="checkbox" class="form-check-input" data-id="{{ it.pk }}"></td>
-                            <td class="fw-bold">{{ it.calificacion_id }}</td>
-                            <td>{{ it.ejercicio }}</td>
-                            <td><span class="badge bg-secondary">{{ it.mercado }}</span></td>
-                            <td>{{ it.instrumento_text|default:"-" }}</td>
-                            <td>{{ it.fecha_pago_dividendo|date:"d/m/Y" }}</td>
-                            <td>{{ it.descripcion|truncatewords:5|default:"-" }}</td>
-                            <td>{{ it.secuencia_evento }}</td>
-                            <td>
-                                {% if it.isfut %}
-                                    <span class="badge bg-success">Sí</span>
-                                {% else %}
-                                    <span class="badge bg-light text-dark">No</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if it.factores_dict %}
-                                    <span class="badge bg-success">✓ Completa</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark">⚠️ Incompleta</span>
-                                {% endif %}
-                            </td>
+        <!-- Reemplaza la sección de tabla y botones por este bloque sencillo (usa POST normal) -->
+        <form method="post" action="{% url 'calificacion_delete_multiple' %}" id="form-delete-selected">
+            {% csrf_token %}
 
-                            <!-- Factores 8-37: valores desde factores_dict preparado en la vista -->
-                            <td>{{ it.factores_dict.8|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.9|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.10|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.11|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.12|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.13|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.14|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.15|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.16|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.17|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.18|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.19|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.20|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.21|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.22|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.23|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.24|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.25|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.26|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.27|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.28|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.29|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.30|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.31|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.32|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.33|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.34|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.35|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.36|floatformat:8|default:"-" }}</td>
-                            <td>{{ it.factores_dict.37|floatformat:8|default:"-" }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="40" class="text-center text-muted py-5">
-                                <div class="mb-2">📭</div>
-                                <p class="mb-1">No hay calificaciones registradas</p>
-                                <small>Haz clic en "Ingresar" para crear una nueva calificación</small>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="data-table">
+                <div class="table-wrapper">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th><input type="checkbox" id="checkbox-all" class="form-check-input"></th>
+                                <th>ID</th>
+                                <th>Ejercicio</th>
+                                <th>Mercado</th>
+                                <th>Instrumento</th>
+                                <th>Fecha Pago</th>
+                                <th>Descripción</th>
+                                <th>Secuencia Evento</th>
+                                <th>Acogido ISFUT/ISIFT</th>
+                                <th>Estado</th>
+                                <th>Factor 8</th>
+                                <th>Factor 9</th>
+                                <th>Factor 10</th>
+                                <th>Factor 11</th>
+                                <th>Factor 12</th>
+                                <th>Factor 13</th>
+                                <th>Factor 14</th>
+                                <th>Factor 15</th>
+                                <th>Factor 16</th>
+                                <th>Factor 17</th>
+                                <th>Factor 18</th>
+                                <th>Factor 19</th>
+                                <th>Factor 20</th>
+                                <th>Factor 21</th>
+                                <th>Factor 22</th>
+                                <th>Factor 23</th>
+                                <th>Factor 24</th>
+                                <th>Factor 25</th>
+                                <th>Factor 26</th>
+                                <th>Factor 27</th>
+                                <th>Factor 28</th>
+                                <th>Factor 29</th>
+                                <th>Factor 30</th>
+                                <th>Factor 31</th>
+                                <th>Factor 32</th>
+                                <th>Factor 33</th>
+                                <th>Factor 34</th>
+                                <th>Factor 35</th>
+                                <th>Factor 36</th>
+                                <th>Factor 37</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for it in items %}
+                            <tr>
+                                <!-- name="ids[]" permite que Django obtenga una lista con request.POST.getlist('ids[]') -->
+                                <td><input type="checkbox" name="ids[]" value="{{ it.pk }}" class="form-check-input row-checkbox"></td>
+                                <td class="fw-bold">{{ it.calificacion_id }}</td>
+                                <td>{{ it.ejercicio }}</td>
+                                <td><span class="badge bg-secondary">{{ it.mercado }}</span></td>
+                                <td>{{ it.instrumento_text|default:"-" }}</td>
+                                <td>{{ it.fecha_pago_dividendo|date:"d/m/Y" }}</td>
+                                <td>{{ it.descripcion|truncatewords:5|default:"-" }}</td>
+                                <td>{{ it.secuencia_evento }}</td>
+                                <td>
+                                    {% if it.isfut %}
+                                        <span class="badge bg-success">Sí</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if it.factores_dict %}
+                                        <span class="badge bg-success">✓ Completa</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">⚠️ Incompleta</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Factores 8-37: valores desde factores_dict preparado en la vista -->
+                                <td>{{ it.factores_dict.8|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.9|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.10|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.11|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.12|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.13|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.14|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.15|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.16|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.17|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.18|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.19|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.20|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.21|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.22|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.23|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.24|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.25|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.26|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.27|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.28|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.29|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.30|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.31|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.32|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.33|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.34|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.35|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.36|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_dict.37|floatformat:8|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="40" class="text-center text-muted py-5">
+                                    <div class="mb-2">📭</div>
+                                    <p class="mb-1">No hay calificaciones registradas</p>
+                                    <small>Haz clic en "Ingresar" para crear una nueva calificación</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
 
-        <!-- Barra de acciones inferior -->
-        <div class="action-bar">
-            <div class="action-buttons">
-                <button class="btn btn-danger">🗑️ Eliminar</button>
-                <a href="{% url 'carga_masiva' %}" class="btn btn-secondary">📁 Carga Masiva</a>
+            <div class="action-buttons mt-3">
+                <!-- submit realiza POST clásico; confirm evita borrados accidentales -->
+                <button type="submit" class="btn btn-danger" id="btn-eliminar" onclick="return confirmDelete()">🗑️ Eliminar seleccionadas</button>
                 <a href="{% url 'carga_manual' %}" class="btn btn-success">➕ Ingresar</a>
-                <button class="btn btn-primary">✏️ Modificar</button>
+                <a href="{% url 'carga_masiva' %}" class="btn btn-secondary">📁 Carga Masiva</a>
+                <!-- cambiar a button type="button" para que NO submit al formulario -->
+                <button type="button" class="btn btn-primary" id="btn-modificar" disabled>✏️ Modificar</button>
             </div>
-        </div>
+        </form>
 
         <!-- Footer con contador -->
         {% if items %}
@@ -206,4 +211,67 @@
         </div>
         {% endif %}
     </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxAll = document.getElementById('checkbox-all');
+        const checkboxes = Array.from(document.querySelectorAll('.row-checkbox'));
+        const btnEliminar = document.getElementById('btn-eliminar');
+        const btnModificar = document.getElementById('btn-modificar');
+
+        // URL plantilla para redirigir a editar; contiene pk=0 que reemplazamos por el id real
+        const editUrlTemplate = "{% url 'calificacion_edit' pk=0 %}";
+
+        function actualizarBoton() {
+            const seleccionados = checkboxes.filter(cb => cb.checked);
+            const any = seleccionados.length > 0;
+            btnEliminar.disabled = !any;
+
+            // Habilitar modificar solo cuando EXACTAMENTE 1 fila esté seleccionada
+            if (seleccionados.length === 1) {
+                btnModificar.disabled = false;
+                const id = seleccionados[0].value || seleccionados[0].getAttribute('value') || seleccionados[0].getAttribute('data-id');
+                // asignar handler para redirigir a la URL de edición de esa calificación
+                btnModificar.onclick = function () {
+                    // reemplazamos '/0/' por '/<id>/' (la plantilla tiene /0/ en la URL)
+                    const target = editUrlTemplate.replace('/0/', `/${id}/`);
+                    window.location.href = target;
+                };
+            } else {
+                btnModificar.disabled = true;
+                btnModificar.onclick = null;
+            }
+
+            // Mantener comportamiento del "select all"
+            if (checkboxes.length) {
+                const todos = checkboxes.every(cb => cb.checked);
+                const alguno = checkboxes.some(cb => cb.checked);
+                if (checkboxAll) {
+                    checkboxAll.checked = todos;
+                    checkboxAll.indeterminate = alguno && !todos;
+                }
+            }
+        }
+
+        if (checkboxAll) {
+            checkboxAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => cb.checked = this.checked);
+                actualizarBoton();
+            });
+        }
+
+        checkboxes.forEach(cb => cb.addEventListener('change', actualizarBoton));
+
+        // inicializar estado botones al cargar
+        actualizarBoton();
+    });
+
+    function confirmDelete() {
+        const selected = document.querySelectorAll('.row-checkbox:checked').length;
+        if (selected === 0) {
+            alert('Selecciona al menos una calificación para eliminar.');
+            return false;
+        }
+        return confirm(`¿Eliminar ${selected} calificación(es)?`);
+    }
+</script>
 {% endblock %}
