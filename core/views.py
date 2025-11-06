@@ -1,40 +1,39 @@
 # core/views.py
 from decimal import Decimal, ROUND_HALF_UP
-
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.db import models,transaction
+from django.db import models, transaction
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import TblFactorDef
 
-from .models import TblCalificacion, TblFactorValor
+from .models import TblCalificacion, TblFactorValor, TblFactorDef, TblTipoIngreso
 from .forms import CalificacionBasicaForm, MontosForm
 
-
 # =============================================================================
-# Utilidad de redondeo
-# -----------------------------------------------------------------------------
-# Redondea con 8 decimales usando HALF_UP (la regla de negocio pedida)
+# Funciones de utilidad
 # =============================================================================
 def _round8(x: Decimal) -> Decimal:
+    """
+    Redondea un número decimal a 8 decimales usando HALF_UP.
+    Args:
+        x (Decimal): Número a redondear
+    Returns:
+        Decimal: Número redondeado a 8 decimales
+    """
     return x.quantize(Decimal("0.00000001"), rounding=ROUND_HALF_UP)
 
-
 # =============================================================================
-# Páginas base / autenticación
+# Vistas de autenticación y navegación básica
 # =============================================================================
 def welcome_view(request):
-    """Portada pública (antes de iniciar sesión)."""
+    """Página de inicio pública."""
     return render(request, "welcome.html")
-
 
 def login_view(request):
     """
-    Login clásico con el backend de Django.
-
-    GET  -> muestra el form de login
-    POST -> autentica credenciales y crea la sesión con `login(...)`
+    Maneja la autenticación de usuarios.
+    - GET: Muestra el formulario de login
+    - POST: Valida credenciales y crea sesión
     """
     if request.method == "POST":
         username = request.POST.get("username", "").strip()
@@ -42,66 +41,83 @@ def login_view(request):
 
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            login(request, user)              # crea cookie de sesión
+            login(request, user)
             return redirect("main")
         messages.error(request, "Usuario o contraseña incorrectos.")
     return render(request, "login.html")
 
-
-@login_required(login_url="login")
-def main_view(request):
-    """
-    Vista principal del sistema con listado completo de calificaciones.
-    Muestra tabla con todos los campos y factores (8-37).
-    """
-    # Obtener calificaciones con relaciones optimizadas
-    items = (
-        TblCalificacion.objects
-        .select_related('tipo_ingreso', 'instrumento')
-        .prefetch_related('factores')
-        .order_by('-fecha_creacion')[:200]
-    )
-    
-    # Preparar diccionario de factores por calificación
-    for item in items:
-        # Acceder a factores precargados
-        all_factores = list(item.factores.all())
-        
-        # DEBUG: Imprimir en consola para verificar
-        print(f"Calificación {item.calificacion_id}:")
-        print(f"  Total factores: {len(all_factores)}")
-        for f in all_factores:
-            print(f"    Posición {f.posicion}: {f.valor}")
-        
-        # Crear diccionario para el template con valores redondeados
-        item.factores_dict = {
-            f.posicion: _round8(f.valor)
-            for f in all_factores
-            if 8 <= f.posicion <= 37
-        }
-        print(f"  factores_dict: {item.factores_dict}")
-    
-    return render(request, "main.html", {"items": items})
-
-
 def logout_view(request):
-    """Cierra sesión y vuelve a la portada."""
+    """Cierra la sesión del usuario y redirecciona a welcome."""
     logout(request)
     return redirect("welcome")
 
+# =============================================================================
+# Vista principal y gestión de calificaciones
+# =============================================================================
+@login_required(login_url="login")
+def main_view(request):
+    """
+    Dashboard principal con listado de calificaciones y filtros.
+    Permite filtrar por:
+    - Mercado
+    - Tipo de ingreso
+    - Ejercicio
+    """
+    # Obtener y procesar filtros
+    filtro_mercado = request.GET.get('mercado', '').strip()
+    filtro_tipo_ingreso = request.GET.get('tipo_ingreso', '').strip()
+    filtro_ejercicio = request.GET.get('ejercicio', '').strip()
+    
+    # Query base optimizada
+    items = (TblCalificacion.objects
+             .select_related('tipo_ingreso', 'instrumento')
+             .prefetch_related('factores'))
+    
+    # Aplicar filtros si existen
+    if filtro_mercado:
+        items = items.filter(mercado__icontains=filtro_mercado)
+    if filtro_tipo_ingreso:
+        items = items.filter(tipo_ingreso__nombre_tipo_ingreso__icontains=filtro_tipo_ingreso)
+    if filtro_ejercicio:
+        try:
+            items = items.filter(ejercicio=int(filtro_ejercicio))
+        except ValueError:
+            pass
+    
+    items = items.order_by('-fecha_creacion')[:200]
+    
+    # Procesar factores para cada calificación
+    for item in items:
+        all_factores = list(item.factores.all())
+        item.factores_dict = {
+            f.posicion: f.valor 
+            for f in all_factores
+            if 8 <= f.posicion <= 37
+        }
+    
+    # Obtener opciones para filtros
+    context = {
+        'items': items,
+        'filtro_mercado': filtro_mercado,
+        'filtro_tipo_ingreso': filtro_tipo_ingreso,
+        'filtro_ejercicio': filtro_ejercicio,
+        'mercados_disponibles': TblCalificacion.objects.values_list('mercado', flat=True).distinct().order_by('mercado'),
+        'tipos_ingreso_disponibles': TblTipoIngreso.objects.all().order_by('nombre_tipo_ingreso'),
+        'ejercicios_disponibles': TblCalificacion.objects.values_list('ejercicio', flat=True).distinct().order_by('-ejercicio'),
+    }
+    
+    return render(request, "main.html", context)
 
 # =============================================================================
-# Mockups 
+# Gestión de calificaciones - Carga Manual
 # =============================================================================
-# Actualiza estas dos vistas en views.py:
-
 @login_required(login_url="login")
 @transaction.atomic
 def carga_manual_view(request):
     """
-    PASO 1: Crear calificación (datos básicos).
-    IMPORTANTE: La calificación se crea pero NO se considera completa hasta 
-    que se ingresen los montos en el PASO 2.
+    PASO 1: Crear nueva calificación (datos básicos)
+    - GET: Muestra formulario vacío
+    - POST: Valida y crea calificación parcial
     """
     if request.method == "POST":
         form = CalificacionBasicaForm(request.POST)
@@ -109,28 +125,22 @@ def carga_manual_view(request):
             calif = form.save(commit=False)
             calif.usuario = request.user
             calif.save()
-
-            messages.warning(
-                request,
-                "⚠️ Calificación creada PARCIALMENTE. Debes completar los montos (PASO 2) para que sea válida."
-            )
-            # Redirige OBLIGATORIAMENTE al PASO 2
+            messages.warning(request, "⚠️ Calificación creada PARCIALMENTE. Complete el paso 2.")
             return redirect("calificacion_edit", pk=calif.pk)
-
-        messages.error(request, "Por favor corrige los errores en el formulario.")
+        messages.error(request, "Por favor corrija los errores en el formulario.")
         return render(request, "cargaManual.html", {"form": form})
 
-    # GET
     form = CalificacionBasicaForm()
     return render(request, "cargaManual.html", {"form": form})
-
 
 @login_required(login_url="login")
 @transaction.atomic
 def calificacion_edit(request, pk: int):
     """
-    PASO 2: Ingreso/edición de montos (pos. 8..37), cálculo y guardado.
-    Si el usuario cancela o vuelve atrás sin guardar, la calificación queda incompleta.
+    PASO 2: Edición de montos y cálculo de factores
+    - Permite ingresar montos para posiciones 8-37
+    - Calcula factores basados en el total
+    - Valida reglas de negocio (suma <= 1.00000000)
     """
     calif = get_object_or_404(TblCalificacion, pk=pk)
 
@@ -268,7 +278,11 @@ def calificacion_edit(request, pk: int):
         {"calif": calif, "montos_form": montos_form, "def_map": def_map},
     )
 
+# =============================================================================
+# Carga Masiva (placeholder)
+# =============================================================================
 def carga_masiva_view(request):
+    """Vista para carga masiva de calificaciones (pendiente implementar)"""
     return render(request, "cargaMasiva.html")
 
 
