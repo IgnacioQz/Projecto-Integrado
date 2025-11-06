@@ -6,9 +6,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import models,transaction
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import TblFactorDef
 
-from .models import TblCalificacion, TblFactorValor
+from .models import TblCalificacion, TblFactorValor, TblFactorDef, TblTipoIngreso
 from .forms import CalificacionBasicaForm, MontosForm
 
 
@@ -52,36 +51,78 @@ def login_view(request):
 def main_view(request):
     """
     Vista principal del sistema con listado completo de calificaciones.
-    Muestra tabla con todos los campos y factores (8-37).
+    Incluye filtros por mercado, tipo de ingreso y ejercicio.
     """
-    # Obtener calificaciones con relaciones optimizadas
+    # Obtener parámetros de filtro desde GET
+    filtro_mercado = request.GET.get('mercado', '').strip()
+    filtro_tipo_ingreso = request.GET.get('tipo_ingreso', '').strip()
+    filtro_ejercicio = request.GET.get('ejercicio', '').strip()
+    
+    # Query base con relaciones optimizadas
     items = (
         TblCalificacion.objects
         .select_related('tipo_ingreso', 'instrumento')
         .prefetch_related('factores')
-        .order_by('-fecha_creacion')[:200]
     )
+    
+    # Aplicar filtros si están presentes
+    if filtro_mercado:
+        items = items.filter(mercado__icontains=filtro_mercado)
+    
+    if filtro_tipo_ingreso:
+        items = items.filter(tipo_ingreso__nombre_tipo_ingreso__icontains=filtro_tipo_ingreso)
+    
+    if filtro_ejercicio:
+        try:
+            items = items.filter(ejercicio=int(filtro_ejercicio))
+        except ValueError:
+            pass  # Ignorar si no es un número válido
+    
+    # Ordenar y limitar
+    items = items.order_by('-fecha_creacion')[:200]
     
     # Preparar diccionario de factores por calificación
     for item in items:
-        # Acceder a factores precargados
         all_factores = list(item.factores.all())
-        
-        # DEBUG: Imprimir en consola para verificar
-        print(f"Calificación {item.calificacion_id}:")
-        print(f"  Total factores: {len(all_factores)}")
-        for f in all_factores:
-            print(f"    Posición {f.posicion}: {f.valor}")
-        
-        # Crear diccionario para el template con valores redondeados
         item.factores_dict = {
-            f.posicion: _round8(f.valor)
+            f.posicion: f.valor 
             for f in all_factores
             if 8 <= f.posicion <= 37
         }
-        print(f"  factores_dict: {item.factores_dict}")
     
-    return render(request, "main.html", {"items": items})
+    # Obtener valores únicos para los filtros (desplegables dinámicos)
+    mercados_disponibles = (
+        TblCalificacion.objects
+        .values_list('mercado', flat=True)
+        .distinct()
+        .order_by('mercado')
+    )
+    
+    tipos_ingreso_disponibles = (
+        TblTipoIngreso.objects
+        .all()
+        .order_by('nombre_tipo_ingreso')
+    )
+    
+    ejercicios_disponibles = (
+        TblCalificacion.objects
+        .values_list('ejercicio', flat=True)
+        .distinct()
+        .order_by('-ejercicio')
+    )
+    
+    context = {
+        'items': items,
+        'filtro_mercado': filtro_mercado,
+        'filtro_tipo_ingreso': filtro_tipo_ingreso,
+        'filtro_ejercicio': filtro_ejercicio,
+        'mercados_disponibles': mercados_disponibles,
+        'tipos_ingreso_disponibles': tipos_ingreso_disponibles,
+        'ejercicios_disponibles': ejercicios_disponibles,
+    }
+    
+    return render(request, "main.html", context)
+
 
 
 def logout_view(request):

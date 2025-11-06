@@ -26,49 +26,57 @@
         {% endif %}
 
         <!-- Barra superior: filtros -->
-        <div class="top-filters">
-            <div class="filters-grid">
-                <!-- Filtro Tipo de Mercado -->
-                <div class="filter-item">
-                    <label for="filtro-mercado">Tipo de Mercado:</label>
-                    <select id="filtro-mercado" class="form-control form-control-sm">
-                        <option value="">Seleccionar...</option>
-                        <option>Acciones</option>
-                        <option>CFI</option>
-                        <option>Fondos Mutuos</option>
-                    </select>
+        <form method="get" id="form-filtros">
+            <div class="top-filters">
+                <div class="filters-grid">
+                    <!-- Filtro Tipo de Mercado -->
+                    <div class="filter-item">
+                        <label for="filtro-mercado">Tipo de Mercado:</label>
+                        <select name="mercado" id="filtro-mercado" class="form-control form-control-sm">
+                            <option value="">Todos los mercados...</option>
+                            {% for mercado in mercados_disponibles %}
+                                <option value="{{ mercado }}" {% if filtro_mercado == mercado %}selected{% endif %}>
+                                    {{ mercado }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Filtro Tipo de Ingreso -->
+                    <div class="filter-item">
+                        <label for="filtro-tipo-ingreso">Tipo de Ingreso:</label>
+                        <select name="tipo_ingreso" id="filtro-tipo-ingreso" class="form-control form-control-sm">
+                            <option value="">Todos los tipos...</option>
+                            {% for tipo in tipos_ingreso_disponibles %}
+                                <option value="{{ tipo.nombre_tipo_ingreso }}" 
+                                        {% if filtro_tipo_ingreso == tipo.nombre_tipo_ingreso %}selected{% endif %}>
+                                    {{ tipo.nombre_tipo_ingreso }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Filtro Ejercicio (Año) -->
+                    <div class="filter-item">
+                        <label for="filtro-ejercicio">Ejercicio (Año):</label>
+                        <select name="ejercicio" id="filtro-ejercicio" class="form-control form-control-sm">
+                            <option value="">Todos los años...</option>
+                            {% for ejercicio in ejercicios_disponibles %}
+                                <option value="{{ ejercicio }}" {% if filtro_ejercicio == ejercicio|stringformat:"s" %}selected{% endif %}>
+                                    {{ ejercicio }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Filtro Origen de Información -->
-                <div class="filter-item">
-                    <label for="filtro-origen">Origen de la Información:</label>
-                    <select id="filtro-origen" class="form-control form-control-sm">
-                        <option value="">Seleccionar...</option>
-                        <option>Carga de archivo</option>
-                        <option>Ingreso manual</option>
-                        <option>Proveniente del sistema</option>
-                    </select>
-                </div>
-
-                <!-- Filtro Periodo Comercial (Año) -->
-                <div class="filter-item">
-                    <label for="filtro-periodo">Periodo Comercial (Año):</label>
-                    <select id="filtro-periodo" class="form-control form-control-sm">
-                        <option value="">Seleccionar...</option>
-                        <option>2025</option>
-                        <option>2024</option>
-                        <option>2023</option>
-                        <option>2022</option>
-                    </select>
+                <!-- Botones de búsqueda y limpieza -->
+                <div class="search-actions">
+                    <button type="submit" class="btn btn-primary btn-sm">🔍 BUSCAR</button>
+                    <button type="button" id="btn-limpiar" class="btn btn-outline-secondary btn-sm">🗑️ LIMPIAR</button>
                 </div>
             </div>
-
-            <!-- Botones de búsqueda y limpieza -->
-            <div class="search-actions">
-                <button class="btn btn-primary btn-sm">🔍 BUSCAR</button>
-                <button class="btn btn-outline-secondary btn-sm">🗑️ LIMPIAR</button>
-            </div>
-        </div>
+        </form>
 
         <!-- Tabla con scroll y datos reales -->
         <div class="data-table">
@@ -205,7 +213,39 @@
         const checkboxes = document.querySelectorAll('.row-checkbox');
         const btnEliminar = document.getElementById('btn-eliminar');
         const btnModificar = document.getElementById('btn-modificar');
+        const btnLimpiar = document.getElementById('btn-limpiar');
+        const formFiltros = document.getElementById('form-filtros');
 
+        // ========================================
+        // FILTROS
+        // ========================================
+        
+        // Botón Limpiar: resetea todos los filtros
+        if (btnLimpiar) {
+            btnLimpiar.addEventListener('click', function() {
+                // Limpiar todos los selects
+                document.getElementById('filtro-mercado').value = '';
+                document.getElementById('filtro-tipo-ingreso').value = '';
+                document.getElementById('filtro-ejercicio').value = '';
+                
+                // Recargar la página sin parámetros GET
+                window.location.href = window.location.pathname;
+            });
+        }
+
+        // Aplicar filtros automáticamente al cambiar (opcional)
+        const filtros = document.querySelectorAll('#filtro-mercado, #filtro-tipo-ingreso, #filtro-ejercicio');
+        filtros.forEach(filtro => {
+            filtro.addEventListener('change', function() {
+                // Descomentar si quieres que filtre automáticamente al cambiar
+                // formFiltros.submit();
+            });
+        });
+
+        // ========================================
+        // SELECCIÓN Y BOTONES DE ACCIÓN
+        // ========================================
+        
         // Función para actualizar estado de los botones
         function actualizarBotones() {
             const seleccionados = document.querySelectorAll('.row-checkbox:checked');
@@ -282,6 +322,44 @@
 
         // Inicializar estado de botones
         actualizarBotones();
+
+        // ========================================
+        // INDICADOR VISUAL DE FILTROS ACTIVOS
+        // ========================================
+        
+        // Mostrar badge con cantidad de filtros activos
+        function mostrarFiltrosActivos() {
+            const filtrosActivos = [];
+            
+            if (document.getElementById('filtro-mercado').value) {
+                filtrosActivos.push('Mercado');
+            }
+            if (document.getElementById('filtro-tipo-ingreso').value) {
+                filtrosActivos.push('Tipo Ingreso');
+            }
+            if (document.getElementById('filtro-ejercicio').value) {
+                filtrosActivos.push('Ejercicio');
+            }
+            
+            if (filtrosActivos.length > 0) {
+                // Crear badge si no existe
+                let badge = document.querySelector('.filtros-activos-badge');
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'badge bg-info filtros-activos-badge ms-2';
+                    document.querySelector('.logo').appendChild(badge);
+                }
+                badge.textContent = `${filtrosActivos.length} filtro(s) activo(s): ${filtrosActivos.join(', ')}`;
+            } else {
+                // Remover badge si existe
+                const badge = document.querySelector('.filtros-activos-badge');
+                if (badge) {
+                    badge.remove();
+                }
+            }
+        }
+        
+        mostrarFiltrosActivos();
     });
     </script>
 {% endblock %}
