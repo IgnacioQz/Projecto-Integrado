@@ -8,6 +8,32 @@ from django.contrib.auth.models import User
 # Catálogos Base
 # =============================================================================
 
+class TblMercado(models.Model):
+    """
+    Catálogo de mercados (ej.: ACCIONES, CFI, FONDOS MUTUOS, etc.)
+    """
+    mercado_id = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=60, unique=True, verbose_name="Nombre del Mercado")
+    codigo = models.CharField(max_length=10, blank=True, verbose_name="Código (opcional)")
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "TBL_MERCADO"
+        verbose_name = "Mercado"
+        verbose_name_plural = "Mercados"
+        ordering = ["nombre"]
+        # Evita duplicados por mayúsc/minúsculas (opcional; requiere Django 3.2+ / Postgres)
+        # constraints = [
+        #     models.UniqueConstraint(
+        #         models.functions.Lower("nombre"),
+        #         name="uq_mercado_nombre_lower"
+        #     )
+        # ]
+
+    def __str__(self):
+        return self.nombre
+
+
 class TblInstrumento(models.Model):
     """
     Catálogo maestro de instrumentos financieros.
@@ -185,7 +211,12 @@ class TblCalificacion(models.Model):
     # ----------------------------
     # Contexto / Identificación
     # ----------------------------
-    mercado = models.CharField(max_length=60, verbose_name="Mercado")
+    mercado = models.ForeignKey(
+        "core.TblMercado",
+        on_delete=models.PROTECT,
+        db_column="mercado_id",
+        verbose_name="Mercado",
+    )
 
     # Instrumento libre (lo escribe el corredor)
     instrumento_text = models.CharField(max_length=120, verbose_name="Instrumento")

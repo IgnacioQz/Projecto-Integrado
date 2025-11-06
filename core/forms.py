@@ -57,7 +57,7 @@ class CalificacionBasicaForm(forms.ModelForm):
             "tipo_ingreso": "Tipo de Ingreso",
         }
         widgets = {
-            "mercado": forms.TextInput(attrs={"class": FORM_CONTROL_CLASS}),
+            "mercado": forms.Select(attrs={"class": FORM_SELECT_CLASS}),
             "instrumento_text": forms.TextInput(attrs={
                 "class": FORM_CONTROL_CLASS,
                 "placeholder": "Ej: ACCIÓN, BONO, etc."

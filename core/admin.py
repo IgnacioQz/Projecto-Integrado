@@ -2,8 +2,17 @@
 from django.contrib import admin
 from .models import (
     TblInstrumento, TblTipoIngreso, TblArchivoFuente,
-    TblCalificacion, TblFactorValor
+    TblCalificacion, TblFactorValor, TblMercado
 )
+
+# ===============================================================
+# Admin: Mercado (nuevo)
+# ===============================================================
+@admin.register(TblMercado)
+class MercadoAdmin(admin.ModelAdmin):
+    list_display = ("mercado_id", "nombre")
+    search_fields = ("nombre",)          # habilita búsqueda
+    ordering = ("nombre",)
 
 # ===============================================================
 # Admin: Instrumento

@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import models, transaction
 from django.shortcuts import render, redirect, get_object_or_404
 
-from .models import TblCalificacion, TblFactorValor, TblFactorDef, TblTipoIngreso
+from .models import TblCalificacion, TblFactorValor, TblFactorDef, TblTipoIngreso, TblMercado
 from .forms import CalificacionBasicaForm, MontosForm
 
 # =============================================================================
@@ -75,7 +75,7 @@ def main_view(request):
     
     # Aplicar filtros si existen
     if filtro_mercado:
-        items = items.filter(mercado__icontains=filtro_mercado)
+        items = items.filter(mercado__id=int(filtro_mercado))
     if filtro_tipo_ingreso:
         items = items.filter(tipo_ingreso__nombre_tipo_ingreso__icontains=filtro_tipo_ingreso)
     if filtro_ejercicio:
@@ -101,7 +101,7 @@ def main_view(request):
         'filtro_mercado': filtro_mercado,
         'filtro_tipo_ingreso': filtro_tipo_ingreso,
         'filtro_ejercicio': filtro_ejercicio,
-        'mercados_disponibles': TblCalificacion.objects.values_list('mercado', flat=True).distinct().order_by('mercado'),
+        'mercados_disponibles': TblMercado.objects.all().order_by('nombre'),
         'tipos_ingreso_disponibles': TblTipoIngreso.objects.all().order_by('nombre_tipo_ingreso'),
         'ejercicios_disponibles': TblCalificacion.objects.values_list('ejercicio', flat=True).distinct().order_by('-ejercicio'),
     }
