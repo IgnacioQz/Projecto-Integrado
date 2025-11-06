@@ -346,3 +346,57 @@ def calificacion_create(request):
     return render(request, "calificaciones_form.html", {"form": CalificacionBasicaForm()})
 
 
+@login_required(login_url="login")
+@transaction.atomic
+def calificacion_delete(request, pk: int):
+    """
+    Elimina una calificación específica (individual).
+    """
+    calif = get_object_or_404(TblCalificacion, pk=pk)
+    
+    if request.method == "POST":
+        calif_id = calif.calificacion_id
+        calif.delete()
+        messages.success(request, f"✅ Calificación #{calif_id} eliminada correctamente.")
+        return redirect("main")
+    
+    # GET: mostrar confirmación
+    return render(request, "calificacion_confirm_delete.html", {"calif": calif})
+
+
+@login_required(login_url="login")
+@transaction.atomic
+def calificacion_delete_multiple(request):
+    """
+    Elimina múltiples calificaciones seleccionadas (desde checkboxes).
+    Recibe una lista de IDs por POST.
+    """
+    if request.method == "POST":
+        # Obtener IDs desde el POST
+        ids = request.POST.getlist('ids[]')  # Lista de IDs como strings
+        
+        if not ids:
+            messages.error(request, "❌ No se seleccionaron calificaciones para eliminar.")
+            return redirect("main")
+        
+        # Convertir a enteros
+        ids = [int(id) for id in ids]
+        
+        # Eliminar las calificaciones
+        calificaciones = TblCalificacion.objects.filter(pk__in=ids)
+        count = calificaciones.count()
+        
+        if count == 0:
+            messages.error(request, "❌ No se encontraron las calificaciones seleccionadas.")
+            return redirect("main")
+        
+        calificaciones.delete()
+        
+        messages.success(
+            request, 
+            f"✅ {count} calificación{'es' if count > 1 else ''} eliminada{'s' if count > 1 else ''} correctamente."
+        )
+        return redirect("main")
+    
+    # Si no es POST, redirigir
+    return redirect("main")
