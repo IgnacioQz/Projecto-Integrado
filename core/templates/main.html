@@ -90,7 +90,6 @@
                                 <th>Descripción</th>
                                 <th>Secuencia Evento</th>
                                 <th>Factor de Actulizacion</th>
-                                <th>Estado</th>
                                 <th>Factor 8</th>
                                 <th>Factor 9</th>
                                 <th>Factor 10</th>
@@ -135,14 +134,6 @@
                                 <td>{{ it.descripcion|truncatewords:5|default:"-" }}</td>
                                 <td>{{ it.secuencia_evento }}</td>
                                 <td>{{ it.factor_actualizacion|floatformat:8|default:"-" }}</td>
-                                <td>
-                                    {% if it.factores_dict %}
-                                        <span class="badge bg-success">✓ Completa</span>
-                                    {% else %}
-                                        <span class="badge bg-warning text-dark">⚠️ Incompleta</span>
-                                    {% endif %}
-                                </td>
-
                                 <!-- Reemplaza los tds de factores 8-37 por esto (índices 0..29) -->
                                 <td>{{ it.factores_array.0|default:"-"|floatformat:8 }}</td>  {# factor 8  #}
                                 <td>{{ it.factores_array.1|default:"-"|floatformat:8 }}</td>  {# factor 9  #}
