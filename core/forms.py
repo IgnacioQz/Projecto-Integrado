@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django import forms
-from .models import TblCalificacion
+from .models import TblCalificacion, TblMercado
 
 # =============================================================================
 # Constantes y configuración
@@ -17,23 +17,15 @@ DECIMAL_WIDGET_ATTRS = {
 # Formulario Paso 1: Datos básicos de calificación
 # =============================================================================
 class CalificacionBasicaForm(forms.ModelForm):
-    """
-    Formulario para crear/editar datos básicos de una calificación.
+    """Formulario para crear/editar datos básicos de una calificación."""
     
-    Fields:
-        mercado: Tipo de mercado (ej: ACCIONES)
-        instrumento_text: Nombre/código del instrumento ingresado manualmente
-        descripcion: Detalle descriptivo
-        fecha_pago_dividendo: Fecha efectiva del pago
-        secuencia_evento: Número secuencial del evento
-        dividendo: Monto del dividendo
-        valor_historico: Valor histórico del instrumento
-        factor_actualizacion: Factor de actualización
-        ejercicio: Año del ejercicio
-        isfut: Flag ISFUT
-        tipo_ingreso: Tipo de ingreso (foreign key)
-    """
-    
+    # Define el campo mercado explícitamente para personalizar el queryset
+    mercado = forms.ModelChoiceField(
+        queryset=TblMercado.objects.filter(activo=True).order_by('nombre'),
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        empty_label="Seleccione un mercado",
+    )
+
     class Meta:
         model = TblCalificacion
         fields = [
@@ -57,7 +49,8 @@ class CalificacionBasicaForm(forms.ModelForm):
             "tipo_ingreso": "Tipo de Ingreso",
         }
         widgets = {
-            "mercado": forms.Select(attrs={"class": FORM_SELECT_CLASS}),
+            # Cambia el widget de mercado a Select
+            "mercado": forms.Select(attrs={"class": FORM_CONTROL_CLASS}),
             "instrumento_text": forms.TextInput(attrs={
                 "class": FORM_CONTROL_CLASS,
                 "placeholder": "Ej: ACCIÓN, BONO, etc."

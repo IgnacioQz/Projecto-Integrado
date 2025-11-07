@@ -56,82 +56,78 @@ def logout_view(request):
 # =============================================================================
 @login_required(login_url="login")
 def main_view(request):
-    """
-    Dashboard principal con listado de calificaciones y filtros.
-    Permite filtrar por:
-    - Mercado
-    - Tipo de ingreso
-    - Ejercicio
-    """
-    # Obtener y procesar filtros
-    filtro_mercado = request.GET.get('mercado', '').strip()
-    filtro_tipo_ingreso = request.GET.get('tipo_ingreso', '').strip()
-    filtro_ejercicio = request.GET.get('ejercicio', '').strip()
-    
-    # Query base optimizada
-    items = (TblCalificacion.objects
-             .select_related('tipo_ingreso', 'instrumento')
-             .prefetch_related('factores'))
-    
-    # Aplicar filtros si existen
+    """Dashboard principal con listado de calificaciones y filtros."""
+    filtro_mercado = request.GET.get('mercado', '')
+    filtro_tipo_ingreso = request.GET.get('tipo_ingreso', '')
+    filtro_ejercicio = request.GET.get('ejercicio', '')
+
+    qs = (TblCalificacion.objects
+          .select_related('mercado', 'tipo_ingreso')
+          # prefetch el conjunto de factores (ajusta 'factores' si tu related_name es distinto)
+          .prefetch_related('factores'))
+
     if filtro_mercado:
-        items = items.filter(mercado__id=int(filtro_mercado))
+        qs = qs.filter(mercado_id=filtro_mercado)
     if filtro_tipo_ingreso:
-        items = items.filter(tipo_ingreso__nombre_tipo_ingreso__icontains=filtro_tipo_ingreso)
+        qs = qs.filter(tipo_ingreso_id=filtro_tipo_ingreso)
     if filtro_ejercicio:
         try:
-            items = items.filter(ejercicio=int(filtro_ejercicio))
+            qs = qs.filter(ejercicio=int(filtro_ejercicio))
         except ValueError:
             pass
-    
-    items = items.order_by('-fecha_creacion')[:200]
-    
-    # Procesar factores para cada calificación
-    for item in items:
-        all_factores = list(item.factores.all())
-        item.factores_dict = {
-            f.posicion: f.valor 
-            for f in all_factores
-            if 8 <= f.posicion <= 37
-        }
-    
-    # Obtener opciones para filtros
+
+    items = qs.order_by('-fecha_creacion')[:500]  # limita por seguridad
+
+    # construir estructuras fáciles de usar en plantilla
+    for it in items:
+        # obtener queryset de factores: intenta related_name 'factores' y si no existe usa reverse relation por convención
+        try:
+            factor_qs = it.factores.all()
+        except Exception:
+            factor_qs = it.tblfactorvalor_set.all()
+
+        factores_map = {int(f.posicion): f.valor for f in factor_qs}
+        # lista indexada: índice 0 -> posición 8, índice 29 -> posición 37
+        factores_array = [factores_map.get(pos) for pos in range(8, 38)]
+
+        it.factores_map = factores_map
+        it.factores_array = factores_array
+
     context = {
         'items': items,
+        'mercados_disponibles': TblMercado.objects.filter(activo=True).order_by('nombre'),
+        'tipos_ingreso_disponibles': TblTipoIngreso.objects.all().order_by('nombre_tipo_ingreso'),
+        'ejercicios_disponibles': TblCalificacion.objects.values_list('ejercicio', flat=True).distinct().order_by('-ejercicio'),
         'filtro_mercado': filtro_mercado,
         'filtro_tipo_ingreso': filtro_tipo_ingreso,
         'filtro_ejercicio': filtro_ejercicio,
-        'mercados_disponibles': TblMercado.objects.all().order_by('nombre'),
-        'tipos_ingreso_disponibles': TblTipoIngreso.objects.all().order_by('nombre_tipo_ingreso'),
-        'ejercicios_disponibles': TblCalificacion.objects.values_list('ejercicio', flat=True).distinct().order_by('-ejercicio'),
     }
-    
     return render(request, "main.html", context)
 
 # =============================================================================
 # Gestión de calificaciones - Carga Manual
 # =============================================================================
 @login_required(login_url="login")
-@transaction.atomic
 def carga_manual_view(request):
-    """
-    PASO 1: Crear nueva calificación (datos básicos)
-    - GET: Muestra formulario vacío
-    - POST: Valida y crea calificación parcial
-    """
+    """PASO 1: Crear nueva calificación."""
     if request.method == "POST":
         form = CalificacionBasicaForm(request.POST)
         if form.is_valid():
             calif = form.save(commit=False)
             calif.usuario = request.user
             calif.save()
-            messages.warning(request, "⚠️ Calificación creada PARCIALMENTE. Complete el paso 2.")
+            messages.success(request, "✅ Calificación creada correctamente.")
             return redirect("calificacion_edit", pk=calif.pk)
-        messages.error(request, "Por favor corrija los errores en el formulario.")
-        return render(request, "cargaManual.html", {"form": form})
+    else:
+        form = CalificacionBasicaForm()
 
-    form = CalificacionBasicaForm()
-    return render(request, "cargaManual.html", {"form": form})
+    # Añadir mercados disponibles al contexto
+    mercados = TblMercado.objects.filter(activo=True).order_by('nombre')
+    
+    return render(request, "cargaManual.html", {
+        "form": form,
+        "mercados": mercados,
+    })
 
 @login_required(login_url="login")
 @transaction.atomic

@@ -25,50 +25,53 @@
             </div>
         {% endif %}
 
-        <!-- Barra superior: filtros -->
-        <div class="top-filters">
-            <div class="filters-grid">
-                <!-- Filtro Tipo de Mercado -->
-                <div class="filter-item">
-                    <label for="filtro-mercado">Tipo de Mercado:</label>
-                    <select id="filtro-mercado" class="form-control form-control-sm">
-                        <option value="">Seleccionar...</option>
-                        <option>Acciones</option>
-                        <option>CFI</option>
-                        <option>Fondos Mutuos</option>
-                    </select>
+        <!-- Envolver los filtros en un form -->
+        <form method="get" id="form-filtros">
+            <div class="top-filters">
+                <div class="filters-grid">
+                    <div class="filter-item">
+                        <label for="mercado">Mercado:</label>
+                        <select name="mercado" class="form-control form-control-sm">
+                            <option value="">-- Todos los Mercados --</option>
+                            {% for m in mercados_disponibles %}
+                                <option value="{{ m.mercado_id }}" {% if filtro_mercado|stringformat:"s" == m.mercado_id|stringformat:"s" %}selected{% endif %}>
+                                    {{ m.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="origen">Origen</label>
+                        <select name="tipo_ingreso" class="form-control form-control-sm">
+                            <option value="">-- Todos los Tipos --</option>
+                            {% for t in tipos_ingreso_disponibles %}
+                                <option value="{{ t.tipo_ingreso_id }}" {% if filtro_tipo_ingreso|stringformat:"s" == t.tipo_ingreso_id|stringformat:"s" %}selected{% endif %}>
+                                    {{ t.nombre_tipo_ingreso }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="ejercicio">Periodo Comercial:</label>
+                        <select name="ejercicio" class="form-control form-control-sm">
+                            <option value="">-- Todos los Años --</option>
+                            {% for e in ejercicios_disponibles %}
+                                <option value="{{ e }}" {% if filtro_ejercicio|stringformat:"s" == e|stringformat:"s" %}selected{% endif %}>
+                                    {{ e }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Filtro Origen de Información -->
-                <div class="filter-item">
-                    <label for="filtro-origen">Origen de la Información:</label>
-                    <select id="filtro-origen" class="form-control form-control-sm">
-                        <option value="">Seleccionar...</option>
-                        <option>Carga de archivo</option>
-                        <option>Ingreso manual</option>
-                        <option>Proveniente del sistema</option>
-                    </select>
-                </div>
-
-                <!-- Filtro Periodo Comercial (Año) -->
-                <div class="filter-item">
-                    <label for="filtro-periodo">Periodo Comercial (Año):</label>
-                    <select id="filtro-periodo" class="form-control form-control-sm">
-                        <option value="">Seleccionar...</option>
-                        <option>2025</option>
-                        <option>2024</option>
-                        <option>2023</option>
-                        <option>2022</option>
-                    </select>
+                <div class="search-actions">
+                    <button type="submit" class="btn btn-primary btn-sm">🔍 BUSCAR</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-limpiar">🗑️ LIMPIAR</button>
                 </div>
             </div>
-
-            <!-- Botones de búsqueda y limpieza -->
-            <div class="search-actions">
-                <button class="btn btn-primary btn-sm">🔍 BUSCAR</button>
-                <button class="btn btn-outline-secondary btn-sm">🗑️ LIMPIAR</button>
-            </div>
-        </div>
+        </form>
 
         <!-- Reemplaza la sección de tabla y botones por este bloque sencillo (usa POST normal) -->
         <form method="post" action="{% url 'calificacion_delete_multiple' %}" id="form-delete-selected">
@@ -82,12 +85,11 @@
                                 <th><input type="checkbox" id="checkbox-all" class="form-check-input"></th>
                                 <th>ID</th>
                                 <th>Ejercicio</th>
-                                <th>Mercado</th>
                                 <th>Instrumento</th>
                                 <th>Fecha Pago</th>
                                 <th>Descripción</th>
                                 <th>Secuencia Evento</th>
-                                <th>Acogido ISFUT/ISIFT</th>
+                                <th>Factor de Actulizacion</th>
                                 <th>Estado</th>
                                 <th>Factor 8</th>
                                 <th>Factor 9</th>
@@ -128,18 +130,11 @@
                                 <td><input type="checkbox" name="ids[]" value="{{ it.pk }}" class="form-check-input row-checkbox"></td>
                                 <td class="fw-bold">{{ it.calificacion_id }}</td>
                                 <td>{{ it.ejercicio }}</td>
-                                <td><span class="badge bg-secondary">{{ it.mercado }}</span></td>
                                 <td>{{ it.instrumento_text|default:"-" }}</td>
                                 <td>{{ it.fecha_pago_dividendo|date:"d/m/Y" }}</td>
                                 <td>{{ it.descripcion|truncatewords:5|default:"-" }}</td>
                                 <td>{{ it.secuencia_evento }}</td>
-                                <td>
-                                    {% if it.isfut %}
-                                        <span class="badge bg-success">Sí</span>
-                                    {% else %}
-                                        <span class="badge bg-light text-dark">No</span>
-                                    {% endif %}
-                                </td>
+                                <td>{{ it.factor_actualizacion|floatformat:8|default:"-" }}</td>
                                 <td>
                                     {% if it.factores_dict %}
                                         <span class="badge bg-success">✓ Completa</span>
@@ -148,37 +143,37 @@
                                     {% endif %}
                                 </td>
 
-                                <!-- Factores 8-37: valores desde factores_dict preparado en la vista -->
-                                <td>{{ it.factores_dict.8|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.9|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.10|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.11|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.12|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.13|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.14|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.15|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.16|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.17|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.18|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.19|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.20|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.21|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.22|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.23|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.24|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.25|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.26|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.27|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.28|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.29|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.30|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.31|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.32|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.33|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.34|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.35|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.36|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_dict.37|floatformat:8|default:"-" }}</td>
+                                <!-- Reemplaza los tds de factores 8-37 por esto (índices 0..29) -->
+                                <td>{{ it.factores_array.0|default:"-"|floatformat:8 }}</td>  {# factor 8  #}
+                                <td>{{ it.factores_array.1|default:"-"|floatformat:8 }}</td>  {# factor 9  #}
+                                <td>{{ it.factores_array.2|default:"-"|floatformat:8 }}</td>  {# factor 10 #}
+                                <td>{{ it.factores_array.3|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.4|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.5|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.6|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.7|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.8|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.9|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.10|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.11|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.12|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.13|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.14|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.15|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.16|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.17|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.18|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.19|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.20|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.21|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.22|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.23|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.24|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.25|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.26|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.27|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.28|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.29|default:"-"|floatformat:8 }}</td> {# factor 37 #}
                             </tr>
                             {% empty %}
                             <tr>
@@ -273,5 +268,15 @@
         }
         return confirm(`¿Eliminar ${selected} calificación(es)?`);
     }
+
+    // Agregar manejador para el botón limpiar
+    document.getElementById('btn-limpiar').addEventListener('click', function() {
+        // Limpiar todos los selects
+        document.querySelectorAll('#form-filtros select').forEach(select => {
+            select.value = '';
+        });
+        // Enviar el formulario
+        document.getElementById('form-filtros').submit();
+    });
 </script>
 {% endblock %}
