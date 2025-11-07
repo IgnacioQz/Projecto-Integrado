@@ -17,7 +17,7 @@
     </div>
   </div>
 
-  <!-- Metadatos útiles (opcional) -->
+  <!-- Metadatos útiles (incluye fecha de última modificación) -->
   <div class="row g-3 mb-3">
     <div class="col-sm-6 col-md-3">
       <div class="small text-muted">Mercado</div>
@@ -35,6 +35,16 @@
       <div class="small text-muted">Secuencia Evento</div>
       <div class="fw-semibold">{{ calif.secuencia_evento }}</div>
     </div>
+    {% if calif.fecha_modificacion %}
+    <div class="col-12">
+      <div class="alert alert-info py-2 mb-0">
+        <small>
+          <strong>📅 Última modificación:</strong> {{ calif.fecha_modificacion|date:"d/m/Y H:i" }}
+          {% if calif.usuario %}por {{ calif.usuario.get_full_name|default:calif.usuario.username }}{% endif %}
+        </small>
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <!-- ===========================================
@@ -51,93 +61,242 @@
   {% endif %}
 
   <!-- ===========================================
-       Formulario de montos (posiciones 8..37)
-       - El label de cada campo ya incluye “pos — nombre” (MontosForm)
-       - Se muestran errores de validación por campo
+       Selector de Modo de Ingreso
        =========================================== -->
-  <form method="post" novalidate>
-    {% csrf_token %}
-
-    <!-- Errores generales del formulario -->
-    {% if montos_form.non_field_errors %}
-      <div class="alert alert-danger">
-        {{ montos_form.non_field_errors }}
-      </div>
-    {% endif %}
-
-    <div class="card shadow-sm mb-3">
-      <div class="card-header py-2">
-        <strong>Montos por factor</strong>
-        <span class="text-muted small d-block">Ingrese valores para posiciones 8..37. El denominador es la suma de 8..19.</span>
-      </div>
-      <div class="card-body p-0">
-
-        <!-- Tabla de entrada de montos -->
-        <div class="table-responsive">
-          <table class="table table-sm m-0 align-middle">
-            <thead class="table-light">
-              <tr>
-                <th style="width: 55%;">Posición / Nombre del factor</th>
-                <th style="width: 25%;">Monto</th>
-                <th style="width: 20%;">Errores</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for field in montos_form %}
-                <tr>
-                  <td>
-                    <label class="form-label m-0">{{ field.label }}</label>
-                    {% if field.help_text %}
-                      <div class="form-text">{{ field.help_text }}</div>
-                    {% endif %}
-                  </td>
-                  <td style="max-width: 260px;">{{ field }}</td>
-                  <td class="text-danger small">
-                    {% for err in field.errors %}• {{ err }}<br>{% endfor %}
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+  <div class="card shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <strong>Modo de ingreso:</strong>
+          <span class="text-muted small">Seleccione cómo desea ingresar los datos</span>
         </div>
+        <div class="btn-group" role="group">
+          <input type="radio" class="btn-check" name="modo_ingreso" id="modo_montos" 
+                 value="montos" {% if modo_ingreso == 'montos' or not modo_ingreso %}checked{% endif %}
+                 onchange="cambiarModoIngreso('montos')">
+          <label class="btn btn-outline-primary" for="modo_montos">
+            💰 Ingresar Montos
+          </label>
 
-      </div>
-      <div class="modal-footer">
-      <!-- Botón para cancelar y eliminar borrador -->
-        <button type="submit" 
-                name="action" 
-                value="cancelar" 
-                class="btn-modal btn-danger"
-                onclick="return confirm('⚠️ ¿Descartar esta calificación incompleta? Se eliminará de la base de datos.')">
-          🗑️ Cancelar y Eliminar
-        </button>
-      
-        <button type="submit" 
-                name="action" 
-                value="calcular" 
-                class="btn-modal btn-secondary">
-            🧮 Calcular
-        </button>
-      
-        <button type="submit" 
-                name="action" 
-                value="guardar" 
-                class="btn-modal btn-primary">
-            💾 Guardar
-        </button>
+          <input type="radio" class="btn-check" name="modo_ingreso" id="modo_factores" 
+                 value="factores" {% if modo_ingreso == 'factores' %}checked{% endif %}
+                 onchange="cambiarModoIngreso('factores')">
+          <label class="btn btn-outline-primary" for="modo_factores">
+            📊 Ingresar Factores
+          </label>
+        </div>
       </div>
     </div>
-  </form>
+  </div>
 
   <!-- ===========================================
-       Resultados (sólo visibles tras "Calcular" o error de suma > 1)
-       - 'factores' y 'total' los envía la vista cuando calcula
+       Formulario de MONTOS (posiciones 8..37)
+       =========================================== -->
+  <div id="formulario-montos" {% if modo_ingreso == 'factores' %}style="display: none;"{% endif %}>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="modo_ingreso" value="montos">
+
+      <!-- Errores generales del formulario -->
+      {% if montos_form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ montos_form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-header py-2">
+          <strong>Montos por factor</strong>
+          <span class="text-muted small d-block">Ingrese valores para posiciones 8..37. El denominador es la suma de 8..19.</span>
+        </div>
+        <div class="card-body p-0">
+
+          <!-- Tabla de entrada de montos -->
+          <div class="table-responsive">
+            <table class="table table-sm m-0 align-middle table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 55%;">Posición / Nombre del factor</th>
+                  <th style="width: 25%;">Monto</th>
+                  <th style="width: 20%;">Errores</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for field in montos_form %}
+                  <tr>
+                    <td>
+                      <label class="form-label m-0">{{ field.label }}</label>
+                      {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                      {% endif %}
+                    </td>
+                    <td style="max-width: 260px;">{{ field }}</td>
+                    <td class="text-danger small">
+                      {% for err in field.errors %}• {{ err }}<br>{% endfor %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <div>
+            <!-- Botón para eliminar la calificación completa -->
+            <button type="submit" 
+                    name="action" 
+                    value="eliminar" 
+                    class="btn btn-danger btn-sm"
+                    onclick="return confirm('⚠️ ¿Está seguro de eliminar PERMANENTEMENTE esta calificación? Esta acción no se puede deshacer.')">
+              🗑️ Eliminar Calificación
+            </button>
+          </div>
+          <div>
+            <!-- Botón para cancelar edición sin guardar -->
+            <button type="submit" 
+                    name="action" 
+                    value="cancelar" 
+                    class="btn btn-outline-secondary btn-sm"
+                    onclick="return confirm('⚠️ ¿Descartar los cambios actuales?')">
+              ❌ Cancelar
+            </button>
+          
+            <button type="submit" 
+                    name="action" 
+                    value="calcular" 
+                    class="btn btn-secondary btn-sm">
+                🧮 Calcular
+            </button>
+          
+            <button type="submit" 
+                    name="action" 
+                    value="guardar" 
+                    class="btn btn-primary btn-sm">
+                💾 Guardar Montos
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===========================================
+       Formulario de FACTORES (ingreso manual)
+       =========================================== -->
+  <div id="formulario-factores"
+     {% if modo_ingreso == 'factores' %}
+       style="display: block;"
+     {% else %}
+       style="display: none;"
+     {% endif %}>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="modo_ingreso" value="factores">
+
+
+      <!-- Errores generales del formulario -->
+      {% if factores_form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ factores_form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-header py-2">
+          <strong>Factores por posición</strong>
+          <span class="text-muted small d-block">Ingrese factores manualmente. La suma de factores 8..19 debe ser ≤ 1.00000000</span>
+        </div>
+        <div class="card-body p-0">
+
+          <!-- Tabla de entrada de factores -->
+          <div class="table-responsive">
+            <table class="table table-sm m-0 align-middle table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 55%;">Posición / Nombre del factor</th>
+                  <th style="width: 25%;">Factor (8 decimales)</th>
+                  <th style="width: 20%;">Errores</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for field in factores_form %}
+                  <tr>
+                    <td>
+                      <label class="form-label m-0">{{ field.label }}</label>
+                      {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                      {% endif %}
+                    </td>
+                    <td style="max-width: 260px;">{{ field }}</td>
+                    <td class="text-danger small">
+                      {% for err in field.errors %}• {{ err }}<br>{% endfor %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <div>
+            <!-- Botón para eliminar la calificación completa -->
+            <button type="submit" 
+                    name="action" 
+                    value="eliminar" 
+                    class="btn btn-danger btn-sm"
+                    onclick="return confirm('⚠️ ¿Está seguro de eliminar PERMANENTEMENTE esta calificación? Esta acción no se puede deshacer.')">
+              🗑️ Eliminar Calificación
+            </button>
+          </div>
+          <div>
+            <!-- Botón para cancelar edición sin guardar -->
+            <button type="submit" 
+                    name="action" 
+                    value="cancelar" 
+                    class="btn btn-outline-secondary btn-sm"
+                    onclick="return confirm('⚠️ ¿Descartar los cambios actuales?')">
+              ❌ Cancelar
+            </button>
+          
+            <button type="submit" 
+                    name="action" 
+                    value="validar" 
+                    class="btn btn-secondary btn-sm">
+                ✓ Validar Factores
+            </button>
+          
+            <button type="submit" 
+                    name="action" 
+                    value="guardar" 
+                    class="btn btn-primary btn-sm">
+                💾 Guardar Factores
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===========================================
+       Resultados (sólo visibles tras "Calcular" o validar)
        =========================================== -->
   {% if factores %}
     <div class="card shadow-sm">
-      <div class="card-header py-2">
-        <strong>Resultados calculados</strong>
-        <span class="text-muted small d-block">Total base (suma montos 8..19): {{ total }}</span>
+      <div class="card-header py-2 {% if suma_valida %}bg-success text-white{% else %}bg-warning{% endif %}">
+        <strong>Resultados {% if modo_ingreso == 'factores' %}de validación{% else %}calculados{% endif %}</strong>
+        <span class="small d-block">
+          {% if modo_ingreso == 'montos' %}
+            Total base (suma montos 8..19): {{ total }}
+          {% endif %}
+          Suma de factores 8..19: <strong>{{ suma_factores_8_19 }}</strong>
+          {% if suma_valida %}
+            ✅ Válido
+          {% else %}
+            ⚠️ Excede el límite de 1.0
+          {% endif %}
+        </span>
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
@@ -146,16 +305,19 @@
               <tr>
                 <th style="width: 8%;">Pos</th>
                 <th>Nombre del factor</th>
+                {% if modo_ingreso == 'montos' %}
                 <th style="width: 20%;">Monto</th>
+                {% endif %}
                 <th style="width: 20%;">Factor</th>
               </tr>
             </thead>
             <tbody>
               {% for pos, row in factores.items %}
-                <tr>
-                  <td>{{ pos }}</td>
+                <tr {% if pos >= 8 and pos <= 19 %}class="table-primary"{% endif %}>  
                   <td>{{ row.nombre }}</td>
+                  {% if modo_ingreso == 'montos' %}
                   <td>{{ row.monto }}</td>
+                  {% endif %}
                   <td>{{ row.factor }}</td>
                 </tr>
               {% endfor %}
@@ -173,4 +335,33 @@
   {% endif %}
 
 </div>
+
+<script>
+// Función para cambiar el modo de ingreso (muestra/oculta formularios)
+function cambiarModoIngreso(modo) {
+  const formularioMontos = document.getElementById('formulario-montos');
+  const formularioFactores = document.getElementById('formulario-factores');
+  
+  if (modo === 'montos') {
+    formularioMontos.style.display = 'block';
+    formularioFactores.style.display = 'none';
+  } else if (modo === 'factores') {
+    formularioMontos.style.display = 'none';
+    formularioFactores.style.display = 'block';
+  }
+}
+
+// Mantener el estado del modo después de recargar la página
+document.addEventListener('DOMContentLoaded', function() {
+  const modoMontos = document.getElementById('modo_montos');
+  const modoFactores = document.getElementById('modo_factores');
+  
+  if (modoMontos && modoMontos.checked) {
+    cambiarModoIngreso('montos');
+  } else if (modoFactores && modoFactores.checked) {
+    cambiarModoIngreso('factores');
+  }
+});
+</script>
+
 {% endblock %}

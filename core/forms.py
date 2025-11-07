@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django import forms
 from .models import TblCalificacion, TblMercado
 
@@ -133,6 +133,76 @@ class MontosForm(forms.Form):
     def total_8_19(self) -> Decimal:
         """Calcula la suma de los montos en posiciones 8-19"""
         return sum(
-            (self.cleaned_data.get(f"monto_{pos}") or Decimal("0"))
-            for pos in range(8, 20)
+            ((self.cleaned_data.get(f"monto_{pos}") or Decimal("0")) for pos in range(8, 20)),
+            Decimal("0")
         )
+
+class FactoresForm(forms.Form):
+    """
+    Ingreso MANUAL de factores (8-37). Máx 8 decimales.
+    Suma 8..19 <= 1.0 y al menos un factor > 0 en 8..19.
+    """
+
+    def __init__(self, *args, factor_defs=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not factor_defs:
+            return
+
+        for pos in range(8, 38):
+            if pos not in factor_defs:
+                continue
+            fdef = factor_defs[pos]
+            field_name = f"factor_{pos}"
+
+            self.fields[field_name] = forms.DecimalField(
+                label=f"{pos:02d} — {fdef.nombre}",
+                required=False,
+                max_digits=9,          # 1 entero + 8 decimales
+                decimal_places=8,
+                initial=Decimal("0.00000000"),
+                widget=forms.NumberInput(attrs={
+                    "class": "form-control form-control-sm",
+                    "step": "0.00000001",
+                    "min": "0",
+                    "max": "1",
+                    "placeholder": "0.00000000",
+                }),
+                help_text=getattr(fdef, "descripcion", None),
+            )
+
+            # clean_factor_{pos}
+            def make_clean(fname):
+                def _clean(self):
+                    valor = self.cleaned_data.get(fname)
+                    if valor is None:
+                        return Decimal("0.00000000")
+                    if valor < 0:
+                        raise forms.ValidationError("El factor no puede ser negativo.")
+                    if valor > 1:
+                        raise forms.ValidationError("El factor no puede ser mayor a 1.")
+                    return valor.quantize(Decimal("0.00000000"), rounding="ROUND_HALF_UP")
+                return _clean
+
+            setattr(self, f"clean_{field_name}", make_clean(field_name).__get__(self, type(self)))
+
+    def clean(self):
+        cleaned = super().clean()
+
+        # Suma 8..19
+        suma_8_19 = Decimal("0")
+        tiene_valor = False
+        for pos in range(8, 20):
+            v = cleaned.get(f"factor_{pos}") or Decimal("0")
+            suma_8_19 += v
+            if v > 0:
+                tiene_valor = True
+
+        if suma_8_19 > Decimal("1.00000000"):
+            raise forms.ValidationError(
+                f"La suma de factores 8-19 ({suma_8_19}) excede 1.00000000. Ajusta los valores."
+            )
+        if not tiene_valor:
+            raise forms.ValidationError(
+                "Debes ingresar al menos un factor mayor a 0 en las posiciones 8-19."
+            )
+        return cleaned

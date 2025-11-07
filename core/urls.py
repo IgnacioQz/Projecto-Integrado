@@ -10,10 +10,6 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('main/', views.main_view, name='main'),
 
-    # =============================================================================
-    # Sandbox (menú de pruebas funcionales)
-    # =============================================================================
-    path('sandbox/', views.sandbox_view, name='sandbox'),
 
     # =============================================================================
     # CRUD de Calificaciones Tributarias - Flujo unificado
