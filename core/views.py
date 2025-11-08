@@ -6,6 +6,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.models import User, Group
+from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 
 from .models import (
@@ -114,13 +116,52 @@ def dashboard(request):
     """
     user = request.user
     if user.is_superuser or _in_group(user, "Administrador"):
-        ctx = {
-            "total_calificaciones": TblCalificacion.objects.count(),
-            "ultimas_calificaciones": TblCalificacion.objects.order_by("-fecha_creacion")[:5],
+         # Métricas básicas
+        total_calificaciones = TblCalificacion.objects.count()
+        ultimas = TblCalificacion.objects.order_by("-fecha_creacion")[:5]
+
+        # Métricas de usuarios (para tarjetas)
+        usuarios_total = User.objects.count()
+        try:
+            g_admin = Group.objects.get(name="Administrador")
+            g_cor = Group.objects.get(name="Corredor")
+            g_ana = Group.objects.get(name="AnalistaTributario")
+            usuarios_por_grupo = {
+                "Administrador": g_admin.user_set.count(),
+                "Corredor": g_cor.user_set.count(),
+                "AnalistaTributario": g_ana.user_set.count(),
+            }
+        except Group.DoesNotExist:
+            usuarios_por_grupo = {}
+
+        context = {
+            "total_calificaciones": total_calificaciones,
+            "ultimas_calificaciones": ultimas,
+            "usuarios_total": usuarios_total,
+            "usuarios_por_grupo": usuarios_por_grupo,
+            "es_admin": True,  # flag para template
         }
-        return render(request, "dashboards/admin.html", ctx)
+        return render(request, "dashboards/admin.html", context)
     return redirect("main")
 
+@login_required(login_url="login")
+def auditoria_list(request):
+    """
+    Placeholder de Auditoría (visible solo para Admin/superusuario).
+    Cuando tengas el modelo de auditoría, cámbialo por un ListView real.
+    """
+    user = request.user
+    if not (user.is_superuser or user.groups.filter(name="Administrador").exists()):
+        messages.error(request, "No tienes permisos para ver Auditoría.")
+        return redirect("main")
+
+    # TODO: Reemplazar con consulta real cuando exista el modelo AuditLog
+    auditorias = []  # lista vacía por ahora
+
+    return render(request, "auditoria/lista_log.html", {
+        "auditorias": auditorias,
+        "es_admin": True,
+    })
 
 # =============================================================================
 # AUTENTICACIÓN

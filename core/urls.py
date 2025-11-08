@@ -34,4 +34,11 @@ urlpatterns = [
     # Carga masiva 
     # ==========================================================================
     path("carga-masiva/", views.carga_masiva_view, name="carga_masiva"),
+
+    # ==========================================================================
+    # Auditoría (placeholder)
+    # ==========================================================================
+    path('auditoria/', views.auditoria_list, name='auditoria_list'),
 ]
+
+
