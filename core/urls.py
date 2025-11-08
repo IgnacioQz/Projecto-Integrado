@@ -1,36 +1,33 @@
 from django.urls import path
 from . import views
 
-# Definición de patrones URL para la aplicación core
-# Organizado por funcionalidad/módulo para mejor mantenimiento
 urlpatterns = [
     # =============================================================================
-    # Autenticación y navegación base
+    # Páginas base / Autenticación
     # =============================================================================
-    path('', views.welcome_view, name='welcome'),          # Página inicial pública
-    path('login/', views.login_view, name='login'),        # Login de usuarios
-    path('logout/', views.logout_view, name='logout'),     # Cierre de sesión
-    path('main/', views.main_view, name='main'),          # Dashboard principal (protegido)
+    path('', views.welcome_view, name='welcome'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('main/', views.main_view, name='main'),
+
+    path('dashboard/', views.dashboard, name='dashboard'),
+
 
     # =============================================================================
-    # Gestión de Calificaciones - Carga Manual
+    # CRUD de Calificaciones Tributarias
     # =============================================================================
-    path('calificaciones/nueva/', 
-         views.carga_manual_view, 
-         name='carga_manual'),                            # Paso 1: Crear calificación
+    # PASO 1: Crear calificación (datos básicos)
+    path('calificaciones/nueva/', views.carga_manual_view, name='carga_manual'),
     
-    path('calificacion/edit/<int:pk>/', 
-         views.calificacion_edit, 
-         name='calificacion_edit'),                       # Paso 2: Editar/completar
+    # PASO 2: Editar montos y calcular factores
+    path('calificaciones/<int:pk>/editar/', views.calificacion_edit, name='calificacion_edit'),
     
-    path('calificaciones/', 
-         views.calificacion_list, 
-         name='calificacion_list'),                       # Listar todas (temporal)
+    # Eliminar calificaciones
+    path('calificaciones/<int:pk>/eliminar/', views.calificacion_delete, name='calificacion_delete'),
+    path('calificaciones/eliminar-multiples/', views.calificacion_delete_multiple, name='calificacion_delete_multiple'),
 
     # =============================================================================
-    # Carga Masiva (pendiente implementar)
+    # Carga Masiva 
     # =============================================================================
-    path('carga_masiva/', 
-         views.carga_masiva_view, 
-         name='carga_masiva'),                           # Vista placeholder
+    path('carga-masiva/', views.carga_masiva_view, name='carga_masiva'),
 ]

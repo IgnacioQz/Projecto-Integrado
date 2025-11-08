@@ -2,7 +2,8 @@
 from django.contrib import admin
 from .models import (
     TblInstrumento, TblTipoIngreso, TblArchivoFuente,
-    TblCalificacion, TblFactorValor, TblMercado
+    TblCalificacion, TblFactorValor, TblMercado, 
+    TblFactorDef
 )
 
 # ===============================================================
@@ -10,7 +11,7 @@ from .models import (
 # ===============================================================
 @admin.register(TblMercado)
 class MercadoAdmin(admin.ModelAdmin):
-    list_display = ("mercado_id", "nombre")
+    list_display = ("nombre", "codigo", "activo")
     search_fields = ("nombre",)          # habilita búsqueda
     ordering = ("nombre",)
 
@@ -85,3 +86,14 @@ class FactorValorAdmin(admin.ModelAdmin):
 
     # permite filtrar por posición (ej. ver solo factores 8..19 o 20..37)
     list_filter = ("posicion",)
+
+# ===============================================================
+# Admin: efinición de factores tributarios (posiciones 8-37)
+# ===============================================================
+@admin.register(TblFactorDef)
+class FactorDefAdmin(admin.ModelAdmin):
+    # columnas visibles en la tabla del admin
+    list_display = ("posicion", "nombre", "descripcion")
+
+    # activa la búsqueda por descripción
+    search_fields   = ("nombre", "descripcion")

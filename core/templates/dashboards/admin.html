@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block main %}
+<h2>Panel del Administrador</h2>
+<p>Accesos:</p>
+<ul>
+  <li><a href="{% url 'main' %}">Mantenedor de Calificaciones</a></li>
+  <li><a href="{% url 'admin:index' %}">Gestión de Usuarios</a></li>
+  <li><a href="#">Auditorías (en desarrollo)</a></li>
+</ul>
+{% endblock %}
