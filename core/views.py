@@ -22,6 +22,35 @@ def _round8(x: Decimal) -> Decimal:
     """
     return x.quantize(Decimal("0.00000001"), rounding=ROUND_HALF_UP)
 
+def _in_group(user, group_name: str) -> bool:
+    return user.groups.filter(name=group_name).exists()
+
+@login_required(login_url="login")
+def dashboard(request):
+    user = request.user
+    grupos = list(user.groups.values_list("name", flat=True))
+    messages.info(request, f"DEBUG grupos de {user.username}: {grupos} / superuser={user.is_superuser}")
+
+    ctx = {
+        "total_calificaciones": TblCalificacion.objects.count(),
+        "ultimas_calificaciones": TblCalificacion.objects.order_by("-fecha_creacion")[:5],
+    }
+
+    if user.is_superuser or _in_group(user, "Administrador"):
+        messages.info(request, "DEBUG: mostrando dashboard ADMIN")
+        return render(request, "dashboards/admin.html", ctx)
+
+    if _in_group(user, "Corredor"):
+        messages.info(request, "DEBUG: mostrando dashboard CORREDOR")
+        return render(request, "dashboards/corredor.html", ctx)
+
+    if _in_group(user, "AnalistaTributario"):
+        messages.info(request, "DEBUG: mostrando dashboard ANALISTA")
+        return render(request, "dashboards/analista.html", ctx)
+
+    messages.warning(request, "Tu usuario no tiene un rol asignado. Contacta a un administrador.")
+    return redirect("welcome")
+
 # =============================================================================
 # Vistas de autenticación y navegación básica
 # =============================================================================
@@ -42,7 +71,8 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect("main")
+            # Redirigir al dashboard (la vista dashboard selecciona la plantilla según el rol)
+            return redirect("dashboard")
         messages.error(request, "Usuario o contraseña incorrectos.")
     return render(request, "login.html")
 
@@ -102,7 +132,7 @@ def main_view(request):
         'filtro_tipo_ingreso': filtro_tipo_ingreso,
         'filtro_ejercicio': filtro_ejercicio,
     }
-    return render(request, "main.html", context)
+    return render(request, "calificaciones/list.html", context)
 
 # =============================================================================
 # Gestión de calificaciones - Carga Manual
@@ -124,10 +154,10 @@ def carga_manual_view(request):
     # Añadir mercados disponibles al contexto
     mercados = TblMercado.objects.filter(activo=True).order_by('nombre')
     
-    return render(request, "cargaManual.html", {
-        "form": form,
-        "mercados": mercados,
-    })
+    return render(request, "calificaciones/form_inicial.html", {
+         "form": form,
+         "mercados": mercados,
+     })
 
 @login_required(login_url="login")
 @transaction.atomic
@@ -203,7 +233,7 @@ def calificacion_edit(request, pk: int):
                     )
                     return render(
                         request,
-                        "calificaciones_edit.html",
+                        "calificaciones/form_factores.html",
                         {
                             "calif": calif,
                             "montos_form": montos_form,
@@ -236,7 +266,7 @@ def calificacion_edit(request, pk: int):
                     )
                     return render(
                         request,
-                        "calificaciones_edit.html",
+                        "calificaciones/form_factores.html",
                         {
                             "calif": calif,
                             "montos_form": montos_form,
@@ -258,7 +288,7 @@ def calificacion_edit(request, pk: int):
                     )
                     return render(
                         request,
-                        "calificaciones_edit.html",
+                        "calificaciones/form_factores.html",
                         {
                             "calif": calif,
                             "montos_form": montos_form,
@@ -298,7 +328,7 @@ def calificacion_edit(request, pk: int):
             factores_form = FactoresForm(initial=initial_factores, factor_defs=def_map)
             return render(
                 request,
-                "calificaciones_edit.html",
+                "calificaciones/form_factores.html",
                 {
                     "calif": calif,
                     "montos_form": montos_form,
@@ -348,7 +378,7 @@ def calificacion_edit(request, pk: int):
                         )
                     return render(
                         request,
-                        "calificaciones_edit.html",
+                        "calificaciones/form_factores.html",
                         {
                             "calif": calif,
                             "montos_form": montos_form,
@@ -370,7 +400,7 @@ def calificacion_edit(request, pk: int):
                         )
                         return render(
                             request,
-                            "calificaciones_edit.html",
+                            "calificaciones/form_factores.html",
                             {
                                 "calif": calif,
                                 "montos_form": montos_form,
@@ -408,7 +438,7 @@ def calificacion_edit(request, pk: int):
             montos_form = MontosForm(initial=initial_montos, factor_defs=def_map)
             return render(
                 request,
-                "calificaciones_edit.html",
+                "calificaciones/form_factores.html",
                 {
                     "calif": calif,
                     "montos_form": montos_form,
@@ -433,7 +463,7 @@ def calificacion_edit(request, pk: int):
     
     return render(
         request,
-        "calificaciones_edit.html",
+        "calificaciones/form_factores.html",
         {
             "calif": calif,
             "montos_form": montos_form,
@@ -447,27 +477,12 @@ def calificacion_edit(request, pk: int):
 # =============================================================================
 def carga_masiva_view(request):
     """Vista para carga masiva de calificaciones (pendiente implementar)"""
-    return render(request, "cargaMasiva.html")
+    return render(request, "calificaciones/carga_masiva.html")
 
 
 # =============================================================================
 # Sandbox (menú de pruebas funcionales reales)
 # =============================================================================
-
-
-
-# =============================================================================
-# Listado de calificaciones (sandbox)
-# =============================================================================
-@login_required(login_url="login")
-def calificacion_list(request):
-    """
-    Lista últimas calificaciones creadas/modificadas.
-    - Ordena por fecha de creación desc.
-    - Limita a 200 como paginación rudimentaria.
-    """
-    items = TblCalificacion.objects.order_by("-fecha_creacion")[:200]
-    return render(request, "calificaciones_list.html", {"items": items})
 
 
 # =============================================================================
@@ -499,10 +514,10 @@ def calificacion_create(request):
             return redirect("calificacion_edit", pk=calif.pk)
 
         # Form inválido -> re-render con errores
-        return render(request, "calificaciones_form.html", {"form": form})
+        return render(request, "calificaciones/form_inicial.html", {"form": form})
 
     # GET
-    return render(request, "calificaciones_form.html", {"form": CalificacionBasicaForm()})
+    return render(request, "calificaciones/form_inicial.html", {"form": CalificacionBasicaForm()})
 
 
 @login_required(login_url="login")

@@ -10,18 +10,16 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('main/', views.main_view, name='main'),
 
+    path('dashboard/', views.dashboard, name='dashboard'),
+
 
     # =============================================================================
-    # CRUD de Calificaciones Tributarias - Flujo unificado
+    # CRUD de Calificaciones Tributarias
     # =============================================================================
-    # Listado
-    path('calificaciones/', views.calificacion_list, name='calificacion_list'),
-    
     # PASO 1: Crear calificación (datos básicos)
-    # Usa carga_manual_view que renderiza cargaManual.html (mockup funcional)
     path('calificaciones/nueva/', views.carga_manual_view, name='carga_manual'),
     
-    # PASO 2: Editar montos y calcular factores (posiciones 8-37)
+    # PASO 2: Editar montos y calcular factores
     path('calificaciones/<int:pk>/editar/', views.calificacion_edit, name='calificacion_edit'),
     
     # Eliminar calificaciones
@@ -29,7 +27,7 @@ urlpatterns = [
     path('calificaciones/eliminar-multiples/', views.calificacion_delete_multiple, name='calificacion_delete_multiple'),
 
     # =============================================================================
-    # Carga Masiva (futuro)
+    # Carga Masiva 
     # =============================================================================
     path('carga-masiva/', views.carga_masiva_view, name='carga_masiva'),
 ]
