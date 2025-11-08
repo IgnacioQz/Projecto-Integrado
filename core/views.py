@@ -2,7 +2,7 @@
 from decimal import Decimal, ROUND_HALF_UP
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.db import models, transaction
 from django.shortcuts import render, redirect, get_object_or_404
 
@@ -28,28 +28,17 @@ def _in_group(user, group_name: str) -> bool:
 @login_required(login_url="login")
 def dashboard(request):
     user = request.user
-    grupos = list(user.groups.values_list("name", flat=True))
-    messages.info(request, f"DEBUG grupos de {user.username}: {grupos} / superuser={user.is_superuser}")
 
-    ctx = {
-        "total_calificaciones": TblCalificacion.objects.count(),
-        "ultimas_calificaciones": TblCalificacion.objects.order_by("-fecha_creacion")[:5],
-    }
 
     if user.is_superuser or _in_group(user, "Administrador"):
-        messages.info(request, "DEBUG: mostrando dashboard ADMIN")
+        ctx = {
+        "total_calificaciones": TblCalificacion.objects.count(),
+        "ultimas_calificaciones": TblCalificacion.objects.order_by("-fecha_creacion")[:5],
+        }
         return render(request, "dashboards/admin.html", ctx)
 
-    if _in_group(user, "Corredor"):
-        messages.info(request, "DEBUG: mostrando dashboard CORREDOR")
-        return render(request, "dashboards/corredor.html", ctx)
+    return redirect ("main")
 
-    if _in_group(user, "AnalistaTributario"):
-        messages.info(request, "DEBUG: mostrando dashboard ANALISTA")
-        return render(request, "dashboards/analista.html", ctx)
-
-    messages.warning(request, "Tu usuario no tiene un rol asignado. Contacta a un administrador.")
-    return redirect("welcome")
 
 # =============================================================================
 # Vistas de autenticación y navegación básica
@@ -71,8 +60,11 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            # Redirigir al dashboard (la vista dashboard selecciona la plantilla según el rol)
-            return redirect("dashboard")
+            if user.is_superuser or _in_group(user, "Administrador"):
+                return redirect("dashboard")
+            
+            return redirect("main")
+    
         messages.error(request, "Usuario o contraseña incorrectos.")
     return render(request, "login.html")
 
@@ -138,6 +130,7 @@ def main_view(request):
 # Gestión de calificaciones - Carga Manual
 # =============================================================================
 @login_required(login_url="login")
+@permission_required('core.add_tblcalificacion', raise_exception=True)
 def carga_manual_view(request):
     """PASO 1: Crear nueva calificación."""
     if request.method == "POST":
@@ -160,6 +153,7 @@ def carga_manual_view(request):
      })
 
 @login_required(login_url="login")
+@permission_required('core.change_tblcalificacion', raise_exception=True)
 @transaction.atomic
 def calificacion_edit(request, pk: int):
     """
@@ -475,6 +469,8 @@ def calificacion_edit(request, pk: int):
 # =============================================================================
 # Carga Masiva (placeholder)
 # =============================================================================
+@login_required(login_url="login")
+@permission_required('core.add_tblcalificacion', raise_exception=True)
 def carga_masiva_view(request):
     """Vista para carga masiva de calificaciones (pendiente implementar)"""
     return render(request, "calificaciones/carga_masiva.html")
@@ -492,6 +488,7 @@ def carga_masiva_view(request):
 # (p.ej. crear logs, inicializar detalle, etc.). Si algo falla, hace rollback.
 # =============================================================================
 @login_required(login_url="login")
+@permission_required('core.add_tblcalificacion', raise_exception=True)
 @transaction.atomic
 def calificacion_create(request):
     """
@@ -521,6 +518,7 @@ def calificacion_create(request):
 
 
 @login_required(login_url="login")
+@permission_required('core.delete_tblcalificacion', raise_exception=True)
 @transaction.atomic
 def calificacion_delete(request, pk: int):
     """
@@ -539,6 +537,7 @@ def calificacion_delete(request, pk: int):
 
 
 @login_required(login_url="login")
+@permission_required('core.delete_tblcalificacion', raise_exception=True)
 @transaction.atomic
 def calificacion_delete_multiple(request):
     """
