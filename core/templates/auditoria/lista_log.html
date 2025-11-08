@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block main %}
+<div class ="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">    
+        <h2 class="m-0">Auditoría de acciones de usuarios</h2>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Volver al Dashboard</a>
+    </div>
+
+    <div class="alert alert-warning">
+        <strong>Esta sección está en construcción. Aquí verás el historial de acciones (quién, cuándo, qué),
+    con filtros por usuario, fecha y entidad afectada. Próximamente.</strong>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <p class="text-muted m-0"> No hay datos de auditoría disponibles por el momento.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
