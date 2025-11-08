@@ -73,7 +73,6 @@
             </div>
         </form>
 
-        <!-- Reemplaza la sección de tabla y botones por este bloque sencillo (usa POST normal) -->
         <form method="post" action="{% url 'calificacion_delete_multiple' %}" id="form-delete-selected">
             {% csrf_token %}
 
@@ -194,6 +193,11 @@
                 {% if perms.core.change_tblcalificacion %}
                     <button type="button" class="btn btn-primary" id="btn-modificar" disabled>✏️ Modificar</button>
                 {% endif %}
+                <div>
+                    {% if user.is_superuser %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">⬅️ Volver al Dashboard</a>
+                    {% endif %}
+                </div>
             </div>
         </form>
 
