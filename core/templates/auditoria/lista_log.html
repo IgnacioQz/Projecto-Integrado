@@ -1,21 +1,64 @@
 {% extends "base.html" %}
-
 {% block main %}
-<div class ="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">    
-        <h2 class="m-0">Auditoría de acciones de usuarios</h2>
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Volver al Dashboard</a>
-    </div>
+<div class="container py-3">
+  <h3>📜 Auditoría (Base de Datos)</h3>
 
-    <div class="alert alert-warning">
-        <strong>Esta sección está en construcción. Aquí verás el historial de acciones (quién, cuándo, qué),
-    con filtros por usuario, fecha y entidad afectada. Próximamente.</strong>
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-auto"><input class="form-control form-control-sm" name="tabla" placeholder="Tabla (p.ej. TBL_CALIFICACION)" value="{{ request.GET.tabla }}"></div>
+    <div class="col-auto">
+      <select name="op" class="form-select form-select-sm">
+        <option value="">Op</option>
+        <option value="I" {% if request.GET.op == 'I' %}selected{% endif %}>I</option>
+        <option value="U" {% if request.GET.op == 'U' %}selected{% endif %}>U</option>
+        <option value="D" {% if request.GET.op == 'D' %}selected{% endif %}>D</option>
+      </select>
     </div>
-    
-    <div class="card">
-        <div class="card-body">
-            <p class="text-muted m-0"> No hay datos de auditoría disponibles por el momento.</p>
-        </div>
-    </div>
+    <div class="col-auto"><input class="form-control form-control-sm" name="actor" placeholder="Actor (app_user)" value="{{ request.GET.actor }}"></div>
+    <div class="col-auto"><input class="form-control form-control-sm" name="pk" placeholder="PK..." value="{{ request.GET.pk }}"></div>
+    <div class="col-auto"><input class="form-control form-control-sm" name="rid" placeholder="Request ID..." value="{{ request.GET.rid }}"></div>
+    <div class="col-auto"><input type="date" class="form-control form-control-sm" name="fi" value="{{ request.GET.fi }}"></div>
+    <div class="col-auto"><input type="date" class="form-control form-control-sm" name="ff" value="{{ request.GET.ff }}"></div>
+    <div class="col-auto"><button class="btn btn-sm btn-primary">Filtrar</button></div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+      <thead>
+        <tr>
+          <th>Fecha</th><th>Tabla</th><th>Op</th><th>PK</th>
+          <th>Actor</th><th>IP</th><th>ReqID</th><th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in eventos %}
+        <tr>
+          <td><small>{{ e.changed_at }}</small></td>
+          <td>{{ e.table_name }}</td>
+          <td>{{ e.op }}</td>
+          <td>{{ e.row_pk }}</td>
+          <td>{{ e.app_user }} <small class="text-muted">({{ e.db_user }})</small></td>
+          <td><small>{{ e.client_ip }}</small></td>
+          <td><code>{{ e.request_id }}</code></td>
+          <td>
+            {% if e.op == 'U' %}
+              <details><summary>Diff</summary>
+                <div class="row">
+                  <div class="col"><pre class="mb-0 small">{{ e.before_row|json_script:"b" }}</pre></div>
+                  <div class="col"><pre class="mb-0 small">{{ e.after_row|json_script:"a" }}</pre></div>
+                </div>
+              </details>
+            {% elif e.op == 'I' %}
+              <details><summary>After</summary><pre class="mb-0 small">{{ e.after_row|json_script:"a" }}</pre></details>
+            {% else %}
+              <details><summary>Before</summary><pre class="mb-0 small">{{ e.before_row|json_script:"b" }}</pre></details>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted">Sin resultados</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}
