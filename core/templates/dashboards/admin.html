@@ -1,10 +1,108 @@
 {% extends "base.html" %}
+
 {% block main %}
-<h2>Panel del Administrador</h2>
-<p>Accesos:</p>
-<ul>
-  <li><a href="{% url 'main' %}">Mantenedor de Calificaciones</a></li>
-  <li><a href="{% url 'admin:index' %}">Gestión de Usuarios</a></li>
-  <li><a href="#">Auditorías (en desarrollo)</a></li>
-</ul>
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="m-0">Dashboard — Admin</h2>
+  </div>
+
+  <!-- Acciones rápidas -->
+  <div class="card shadow-sm mb-3">
+    <div class="card-body d-flex flex-wrap gap-2">
+      <a href="{% url 'main' %}" class="btn btn-primary">🧰 Ir al Mantenedor</a>
+      <a href="{% url 'carga_manual' %}" class="btn btn-outline-primary">➕ Nueva calificación</a>
+      <a href="{% url 'carga_masiva' %}" class="btn btn-outline-secondary">📁 Carga masiva</a>
+
+      <!-- Gestión de usuarios (Django admin por ahora) -->
+      <a href="/admin/auth/user/" class="btn btn-outline-dark">👤 Usuarios</a>
+      <a href="/admin/auth/group/" class="btn btn-outline-dark">👥 Grupos</a>
+
+      <!-- Auditoría (placeholder interno) -->
+      <a href="{% url 'auditoria_list' %}" class="btn btn-outline-warning">🧾 Auditoría</a>
+    </div>
+  </div>
+
+  <!-- Métricas / estado -->
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">Total de calificaciones</div>
+          <div class="h4 m-0">{{ total_calificaciones|default:"0" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">Usuarios</div>
+          <div class="h4 m-0">{{ usuarios_total|default:"0" }}</div>
+          {% if usuarios_por_grupo %}
+          <div class="mt-2 small text-muted">
+            <div>Admin: {{ usuarios_por_grupo.Administrador|default:"0" }}</div>
+            <div>Corredor: {{ usuarios_por_grupo.Corredor|default:"0" }}</div>
+            <div>Analista: {{ usuarios_por_grupo.AnalistaTributario|default:"0" }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small">Consejo</div>
+          <div class="small">
+            Recuerda revisar las calificaciones periódicamente para asegurar la calidad de los datos.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Últimas calificaciones -->
+  <div class="card shadow-sm">
+    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+      <strong>Últimas calificaciones</strong>
+      <a href="{% url 'main' %}" class="btn btn-link btn-sm">Ver todas →</a>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover m-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 80px;">ID</th>
+              <th>Instrumento</th>
+              <th style="width: 120px;">Ejercicio</th>
+              <th>Mercado</th>
+              <th style="width: 160px;" class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for it in ultimas_calificaciones %}
+              <tr>
+                <td>#{{ it.pk }}</td>
+                <td>{{ it.instrumento_text }}</td>
+                <td>{{ it.ejercicio }}</td>
+                <td>{{ it.mercado }}</td>
+                <td class="text-end">
+                  <a href="{% url 'calificacion_edit' it.pk %}" class="btn btn-outline-primary btn-sm">✏️ Editar</a>
+                  <!-- La eliminación masiva está disponible en el mantenedor -->
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-3">
+                  No hay calificaciones aún. Crea la primera desde
+                  <a href="{% url 'carga_manual' %}">“Nueva calificación”</a>.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

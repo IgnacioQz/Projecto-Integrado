@@ -1,99 +1,76 @@
 # core/admin.py
 from django.contrib import admin
 from .models import (
-    TblInstrumento, TblTipoIngreso, TblArchivoFuente,
-    TblCalificacion, TblFactorValor, TblMercado, 
-    TblFactorDef
+    TblInstrumento,
+    TblTipoIngreso,
+    TblArchivoFuente,
+    TblCalificacion,
+    TblFactorValor,
+    TblMercado,
+    TblFactorDef,
 )
 
-# ===============================================================
-# Admin: Mercado (nuevo)
-# ===============================================================
+# =============================================================================
+# Mercado
+# =============================================================================
 @admin.register(TblMercado)
 class MercadoAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "codigo", "activo")
-    search_fields = ("nombre",)          # habilita búsqueda
-    ordering = ("nombre",)
+    list_display  = ("nombre", "codigo", "activo")
+    search_fields = ("nombre",)
+    ordering      = ("nombre",)
 
-# ===============================================================
-# Admin: Instrumento
-# ===============================================================
+
+# =============================================================================
+# Instrumento
+# =============================================================================
 @admin.register(TblInstrumento)
 class InstrumentoAdmin(admin.ModelAdmin):
-    # columnas visibles en la tabla del panel admin
-    list_display = ("instrumento_id", "nombre", "tipo_instrumento")
-
-    # campos por los que se puede buscar (barra de búsqueda)
+    list_display  = ("instrumento_id", "nombre", "tipo_instrumento")
     search_fields = ("nombre", "tipo_instrumento")
 
-# ===============================================================
-# Admin: Tipo de Ingreso
-# ===============================================================
+
+# =============================================================================
+# Tipo de Ingreso
+# =============================================================================
 @admin.register(TblTipoIngreso)
 class TipoIngresoAdmin(admin.ModelAdmin):
-    # columnas visibles
     list_display = ("tipo_ingreso_id", "nombre_tipo_ingreso", "prioridad")
+    ordering     = ("prioridad",)
 
-    # define el orden por defecto de las filas
-    ordering = ("prioridad",)
 
-# ===============================================================
-# Admin: Archivo Fuente (cargas masivas)
-# ===============================================================
+# =============================================================================
+# Archivo Fuente (cargas masivas)
+# =============================================================================
 @admin.register(TblArchivoFuente)
 class ArchivoFuenteAdmin(admin.ModelAdmin):
-    # columnas que se muestran en la tabla
-    list_display = (
-        "archivo_fuente_id",
-        "nombre_archivo",
-        "ruta_almacenamiento",
-        "fecha_subida",
-        "usuario",
-    )
-
-    # activa la búsqueda rápida por nombre o ruta
+    list_display  = ("archivo_fuente_id", "nombre_archivo", "ruta_almacenamiento", "fecha_subida", "usuario")
     search_fields = ("nombre_archivo", "ruta_almacenamiento")
 
-# ===============================================================
-# Admin: Calificación Tributaria
-# ===============================================================
+
+# =============================================================================
+# Calificación Tributaria
+# =============================================================================
 @admin.register(TblCalificacion)
 class CalificacionAdmin(admin.ModelAdmin):
-    # columnas visibles en la lista de calificaciones
-    list_display = (
-        "calificacion_id",
-        "ejercicio",
-        "mercado",
-        "instrumento",
-        "secuencia_evento",
-        "fecha_creacion",
-    )
-
-    # filtros laterales (sidebar del admin)
-    list_filter = ("ejercicio", "mercado", "instrumento")
-
-    # campos que admite el buscador del admin
+    list_display  = ("calificacion_id", "ejercicio", "mercado", "instrumento", "secuencia_evento", "fecha_creacion")
+    list_filter   = ("ejercicio", "mercado", "instrumento")
+    # Nota: el doble guion bajo "__" permite buscar por campo de relación ForeignKey
     search_fields = ("instrumento__nombre",)
-    # nota: el doble guion bajo "__" permite buscar por campo de relación ForeignKey
 
-# ===============================================================
-# Admin: Factor Valor (factores 8..37)
-# ===============================================================
+
+# =============================================================================
+# Factor Valor (posiciones 8..37)
+# =============================================================================
 @admin.register(TblFactorValor)
 class FactorValorAdmin(admin.ModelAdmin):
-    # columnas que se mostrarán en la lista del admin
     list_display = ("id", "calificacion", "posicion", "valor")
+    list_filter  = ("posicion",)
 
-    # permite filtrar por posición (ej. ver solo factores 8..19 o 20..37)
-    list_filter = ("posicion",)
 
-# ===============================================================
-# Admin: efinición de factores tributarios (posiciones 8-37)
-# ===============================================================
+# =============================================================================
+# Definición de factores tributarios (posiciones 8..37)
+# =============================================================================
 @admin.register(TblFactorDef)
 class FactorDefAdmin(admin.ModelAdmin):
-    # columnas visibles en la tabla del admin
-    list_display = ("posicion", "nombre", "descripcion")
-
-    # activa la búsqueda por descripción
-    search_fields   = ("nombre", "descripcion")
+    list_display  = ("posicion", "nombre", "descripcion")
+    search_fields = ("nombre", "descripcion")

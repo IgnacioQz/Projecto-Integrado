@@ -73,7 +73,6 @@
             </div>
         </form>
 
-        <!-- Reemplaza la sección de tabla y botones por este bloque sencillo (usa POST normal) -->
         <form method="post" action="{% url 'calificacion_delete_multiple' %}" id="form-delete-selected">
             {% csrf_token %}
 
@@ -82,7 +81,9 @@
                     <table class="table table-sm table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th><input type="checkbox" id="checkbox-all" class="form-check-input"></th>
+                                {% if perms.core.delete_tblcalificacion or perms.core.change_tblcalificacion %}
+                                    <th><input type="checkbox" id="checkbox-all" class="form-check-input"></th>
+                                {% endif %}
                                 <th>ID</th>
                                 <th>Ejercicio</th>
                                 <th>Instrumento</th>
@@ -125,8 +126,9 @@
                         <tbody>
                             {% for it in items %}
                             <tr>
-                                <!-- name="ids[]" permite que Django obtenga una lista con request.POST.getlist('ids[]') -->
-                                <td><input type="checkbox" name="ids[]" value="{{ it.pk }}" class="form-check-input row-checkbox"></td>
+                                {% if perms.core.delete_tblcalificacion or perms.core.change_tblcalificacion %}
+                                    <td><input type="checkbox" name="ids[]" value="{{ it.pk }}" class="form-check-input row-checkbox"></td>
+                                {% endif %}
                                 <td class="fw-bold">{{ it.calificacion_id }}</td>
                                 <td>{{ it.ejercicio }}</td>
                                 <td>{{ it.instrumento_text|default:"-" }}</td>
@@ -134,10 +136,9 @@
                                 <td>{{ it.descripcion|truncatewords:5|default:"-" }}</td>
                                 <td>{{ it.secuencia_evento }}</td>
                                 <td>{{ it.factor_actualizacion|floatformat:8|default:"-" }}</td>
-                                <!-- Reemplaza los tds de factores 8-37 por esto (índices 0..29) -->
-                                <td>{{ it.factores_array.0|default:"-"|floatformat:8 }}</td>  {# factor 8  #}
-                                <td>{{ it.factores_array.1|default:"-"|floatformat:8 }}</td>  {# factor 9  #}
-                                <td>{{ it.factores_array.2|default:"-"|floatformat:8 }}</td>  {# factor 10 #}
+                                <td>{{ it.factores_array.0|default:"-"|floatformat:8 }}</td>  
+                                <td>{{ it.factores_array.1|default:"-"|floatformat:8 }}</td>  
+                                <td>{{ it.factores_array.2|default:"-"|floatformat:8 }}</td>  
                                 <td>{{ it.factores_array.3|default:"-"|floatformat:8 }}</td>
                                 <td>{{ it.factores_array.4|default:"-"|floatformat:8 }}</td>
                                 <td>{{ it.factores_array.5|default:"-"|floatformat:8 }}</td>
@@ -182,11 +183,21 @@
 
             <div class="action-buttons mt-3">
                 <!-- submit realiza POST clásico; confirm evita borrados accidentales -->
-                <button type="submit" class="btn btn-danger" id="btn-eliminar" onclick="return confirmDelete()">🗑️ Eliminar seleccionadas</button>
-                <a href="{% url 'carga_manual' %}" class="btn btn-success">➕ Ingresar</a>
-                <a href="{% url 'carga_masiva' %}" class="btn btn-secondary">📁 Carga Masiva</a>
-                <!-- cambiar a button type="button" para que NO submit al formulario -->
-                <button type="button" class="btn btn-primary" id="btn-modificar" disabled>✏️ Modificar</button>
+                {% if perms.core.delete_tblcalificacion %}
+                    <button type="submit" class="btn btn-danger" id="btn-eliminar" onclick="return confirmDelete()">🗑️ Eliminar seleccionadas</button>
+                {% endif %}
+                {% if perms.core.add_tblcalificacion %}
+                    <a href="{% url 'carga_manual' %}" class="btn btn-success">➕ Ingresar</a>
+                    <a href="{% url 'carga_masiva' %}" class="btn btn-secondary">📁 Carga Masiva</a>
+                {% endif %}
+                {% if perms.core.change_tblcalificacion %}
+                    <button type="button" class="btn btn-primary" id="btn-modificar" disabled>✏️ Modificar</button>
+                {% endif %}
+                <div>
+                    {% if user.is_superuser %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">⬅️ Volver al Dashboard</a>
+                    {% endif %}
+                </div>
             </div>
         </form>
 
