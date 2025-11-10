@@ -39,9 +39,9 @@ def _is_analista_o_admin(u):
 def _badge(op):
     """Mapea operación a etiqueta + color Bootstrap."""
     return {
-        "I": ("Insert",  "success"),
-        "U": ("Update",  "warning"),
-        "D": ("Delete",  "danger"),
+        "I": ("Añadido",  "success"),
+        "U": ("Modificado",  "warning"),
+        "D": ("Eliminado",  "danger"),
     }.get(op, (op, "secondary"))
 
 # ==========================

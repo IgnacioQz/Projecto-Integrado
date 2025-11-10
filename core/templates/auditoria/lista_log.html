@@ -39,9 +39,9 @@
       <div class="stat-card p-3 shadow-sm bg-light">
         <div class="text-muted small mb-1">Por tipo</div>
         <div class="d-flex gap-2 flex-wrap">
-          <span class="badge bg-success">Insert {{ count_I }}</span>
-          <span class="badge bg-warning text-dark">Update {{ count_U }}</span>
-          <span class="badge bg-danger">Delete {{ count_D }}</span>
+          <span class="badge bg-success">Añadidos {{ count_I }}</span>
+          <span class="badge bg-warning text-dark">Modificaciones {{ count_U }}</span>
+          <span class="badge bg-danger">Eliminaciones {{ count_D }}</span>
         </div>
       </div>
     </div>
@@ -54,9 +54,9 @@
         <label class="form-label form-label-sm">Operación</label>
         <select name="op" class="form-select form-select-sm">
           <option value="">Todas</option>
-          <option value="I" {% if op == 'I' %}selected{% endif %}>Insert</option>
-          <option value="U" {% if op == 'U' %}selected{% endif %}>Update</option>
-          <option value="D" {% if op == 'D' %}selected{% endif %}>Delete</option>
+          <option value="I" {% if op == 'I' %}selected{% endif %}>Añadidos</option>
+          <option value="U" {% if op == 'U' %}selected{% endif %}>Modificaciones</option>
+          <option value="D" {% if op == 'D' %}selected{% endif %}>Eliminaciones</option>
         </select>
       </div>
 
@@ -131,13 +131,13 @@
                   <td>
                     {% if r.op == 'U' %}
                       <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-dark" data-bs-toggle="collapse" data-bs-target="#b{{ forloop.parentloop.counter }}{{ forloop.counter }}">Before</button>
-                        <button class="btn btn-outline-dark" data-bs-toggle="collapse" data-bs-target="#a{{ forloop.parentloop.counter }}{{ forloop.counter }}">After</button>
+                        <button class="btn btn-outline-dark" data-bs-toggle="collapse" data-bs-target="#b{{ forloop.parentloop.counter }}{{ forloop.counter }}">Antes</button>
+                        <button class="btn btn-outline-dark" data-bs-toggle="collapse" data-bs-target="#a{{ forloop.parentloop.counter }}{{ forloop.counter }}">Después</button>
                       </div>
                     {% elif r.op == 'I' %}
-                      <button class="btn btn-sm btn-outline-dark" data-bs-toggle="collapse" data-bs-target="#a{{ forloop.parentloop.counter }}{{ forloop.counter }}">After</button>
+                      <button class="btn btn-sm btn-outline-dark" data-bs-toggle="collapse" data-bs-target="#a{{ forloop.parentloop.counter }}{{ forloop.counter }}">Antes</button>
                     {% else %}
-                      <button class="btn btn-sm btn-outline-dark" data-bs-toggle="collapse" data-bs-target="#b{{ forloop.parentloop.counter }}{{ forloop.counter }}">Before</button>
+                      <button class="btn btn-sm btn-outline-dark" data-bs-toggle="collapse" data-bs-target="#b{{ forloop.parentloop.counter }}{{ forloop.counter }}">Después</button>
                     {% endif %}
                   </td>
                 </tr>

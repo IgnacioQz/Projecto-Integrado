@@ -7,7 +7,7 @@ from django.db import models
 
 class AuditEventDB(models.Model):
     # Identificador del evento (UUID generado en el trigger)
-    event_id     = models.UUIDField(primary_key=True)
+    id     = models.UUIDField(primary_key=True)
 
     # Momento del cambio
     changed_at   = models.DateTimeField()
