@@ -1,6 +1,7 @@
 # core/urls.py
 from django.urls import path
 from . import views
+from .views_audit import auditoria_list, audit_ping 
 
 urlpatterns = [
     # ==========================================================================
@@ -38,7 +39,8 @@ urlpatterns = [
     # ==========================================================================
     # Auditoría (placeholder)
     # ==========================================================================
-    path('auditoria/', views.auditoria_list, name='auditoria_list'),
+    path("auditoria/", auditoria_list, name="auditoria_list"),  # ✅ usa la vista importada
+    path("audit-ping/", audit_ping, name="audit_ping"),
 ]
 
 
