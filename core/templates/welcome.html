@@ -10,11 +10,13 @@
 {% endblock %}
 
 {% block main %}
-    <div class="welcome-card">
-        <h1>Sistema de Calificaciones Tributarias de NUAM</h1>
-        <p class="subtitle">Gestiona y consulta calificaciones de manera eficiente</p>
-        <div class="welcome-actions">
-            <a href="{% url 'login' %}" class="btn btn-primary">Iniciar Sesión</a>
+    <div class="container-hero">
+        <div class="welcome-card">
+            <h1>Sistema de Calificaciones Tributarias de NUAM</h1>
+            <p class="subtitle">Gestiona y consulta calificaciones de manera eficiente</p>
+            <div class="welcome-actions">
+                <a href="{% url 'login' %}" class="btn btn-primary">Iniciar Sesión</a>
+            </div>
         </div>
     </div>
 {% endblock %}

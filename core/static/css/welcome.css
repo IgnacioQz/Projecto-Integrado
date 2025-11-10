@@ -10,6 +10,19 @@
 }
 
 /* Estética coherente con login.css: tarjeta centrada, sombra y botones naranja */
+/* Centrar verticalmente todo el contenido de bienvenida */
+body, html {
+  height: 100%;
+}
+
+main {
+  min-height: calc(100vh - 56px); /* resta la altura del navbar */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
 
 .container-hero {
     min-height: 75vh;

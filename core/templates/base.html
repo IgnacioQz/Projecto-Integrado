@@ -22,7 +22,6 @@
             </a>
             <div>
                 {% if user.is_authenticated %}
-                    <span class="text-muted me-3">👤 {{ user.username }}</span>
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'logout' %}">
                         Cerrar sesión
                     </a>
