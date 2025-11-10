@@ -1,11 +1,36 @@
-from decimal import Decimal
+# =============================================================================
+# IMPORTS
+# =============================================================================
+from decimal import Decimal, InvalidOperation
 from django import forms
-from .models import TblCalificacion
+from .models import TblCalificacion, TblMercado
 
+
+# =============================================================================
+# CONFIGURACIÓN GLOBAL DE FORMULARIOS
+# =============================================================================
+FORM_CONTROL_CLASS = "form-control-modal"
+FORM_SELECT_CLASS = "form-select-modal"
+DECIMAL_WIDGET_ATTRS = {
+    "step": "0.01",
+    "class": f"{FORM_CONTROL_CLASS} form-control-sm",
+    "placeholder": "0.00"
+}
+
+
+# =============================================================================
+# FORMULARIO PASO 1: DATOS BÁSICOS DE CALIFICACIÓN
+# =============================================================================
 class CalificacionBasicaForm(forms.ModelForm):
-    """Paso 1: datos básicos de la calificación.
-       OJO: el corredor escribe el instrumento en 'instrumento_text'."""
-    
+    """Formulario para crear/editar datos básicos de una calificación."""
+
+    # Campo mercado personalizado
+    mercado = forms.ModelChoiceField(
+        queryset=TblMercado.objects.filter(activo=True).order_by('nombre'),
+        widget=forms.Select(attrs={'class': FORM_CONTROL_CLASS}),
+        empty_label="Seleccione un mercado",
+    )
+
     class Meta:
         model = TblCalificacion
         fields = [
@@ -29,84 +54,162 @@ class CalificacionBasicaForm(forms.ModelForm):
             "tipo_ingreso": "Tipo de Ingreso",
         }
         widgets = {
-            "mercado": forms.TextInput(attrs={
-                "class": "form-control-modal",
-            }),
+            "mercado": forms.Select(attrs={"class": FORM_SELECT_CLASS}),
             "instrumento_text": forms.TextInput(attrs={
-                "class": "form-control-modal",
+                "class": FORM_CONTROL_CLASS,
                 "placeholder": "Ej: ACCIÓN, BONO, etc."
             }),
             "descripcion": forms.Textarea(attrs={
-                "class": "form-control-modal",
+                "class": FORM_CONTROL_CLASS,
                 "rows": 3,
                 "placeholder": "Descripción del instrumento"
             }),
             "fecha_pago_dividendo": forms.DateInput(attrs={
-                "class": "form-control-modal",
+                "class": FORM_CONTROL_CLASS,
                 "type": "date"
             }),
             "secuencia_evento": forms.NumberInput(attrs={
-                "class": "form-control-modal",
+                "class": FORM_CONTROL_CLASS,
             }),
             "dividendo": forms.NumberInput(attrs={
-                "class": "form-control-modal",
+                "class": FORM_CONTROL_CLASS,
                 "step": "0.01"
             }),
             "valor_historico": forms.NumberInput(attrs={
-                "class": "form-control-modal",
+                "class": FORM_CONTROL_CLASS,
                 "step": "0.01"
             }),
             "factor_actualizacion": forms.NumberInput(attrs={
-                "class": "form-control-modal",
+                "class": FORM_CONTROL_CLASS,
                 "step": "0.0001"
             }),
             "ejercicio": forms.NumberInput(attrs={
-                "class": "form-control-modal",
+                "class": FORM_CONTROL_CLASS,
                 "placeholder": "Año"
             }),
-            "isfut": forms.CheckboxInput(attrs={
-                "class": "form-check-input",
-            }),
-            "tipo_ingreso": forms.Select(attrs={
-                "class": "form-select-modal",
-            }),
+            "isfut": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "tipo_ingreso": forms.Select(attrs={"class": FORM_SELECT_CLASS}),
         }
 
 
+# =============================================================================
+# FORMULARIO PASO 2-A: INGRESO DE MONTOS (AUTOMÁTICO)
+# =============================================================================
 class MontosForm(forms.Form):
     """
-    Form para ingresar montos por posición 8..37.
-    Recibe factor_defs={posicion: TblFactorDef} para etiquetar dinámicamente.
+    Formulario para ingresar montos en posiciones 8-37.
+
+    Args:
+        factor_defs (dict): Mapeo {posicion: TblFactorDef} para labels dinámicos.
     """
+
     def __init__(self, *args, factor_defs=None, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Crear campos dinámicos 8–37
         for pos in range(8, 38):
-            self.fields[f"monto_{pos}"] = forms.DecimalField(
+            field_name = f"monto_{pos}"
+
+            self.fields[field_name] = forms.DecimalField(
                 required=False,
                 min_value=Decimal("0"),
-                max_digits=16, 
+                max_digits=16,
                 decimal_places=2,
-                widget=forms.NumberInput(attrs={
-                    "step": "0.01", 
-                    "class": "form-control-modal form-control-sm",  
-                    "placeholder": "0.00"
-                }),
+                widget=forms.NumberInput(attrs=DECIMAL_WIDGET_ATTRS),
             )
-            # Etiqueta con nombre del catálogo
+
+            # Label y ayuda desde el catálogo
             etiqueta = f"Posición {pos}"
             if factor_defs and pos in factor_defs:
-                etiqueta = f"{pos} — {factor_defs[pos].nombre}"
-            self.fields[f"monto_{pos}"].label = etiqueta
-            
-            # (opcional) ayuda visible bajo el input
-            if factor_defs and pos in factor_defs and factor_defs[pos].descripcion:
-                self.fields[f"monto_{pos}"].help_text = factor_defs[pos].descripcion
+                factor = factor_defs[pos]
+                etiqueta = f"{pos} — {factor.nombre}"
+                if factor.descripcion:
+                    self.fields[field_name].help_text = factor.descripcion
 
-    def total_8_19(self):
-        total = Decimal("0")
+            self.fields[field_name].label = etiqueta
+
+    def total_8_19(self) -> Decimal:
+        """Calcula la suma de los montos en posiciones 8-19."""
+        return sum(
+            (self.cleaned_data.get(f"monto_{pos}") or Decimal("0") for pos in range(8, 20)),
+            Decimal("0")
+        )
+
+
+# =============================================================================
+# FORMULARIO PASO 2-B: INGRESO DE FACTORES (MANUAL)
+# =============================================================================
+class FactoresForm(forms.Form):
+    """
+    Formulario para ingreso MANUAL de factores (posiciones 8-37).
+    - Cada campo acepta hasta 8 decimales.
+    - Suma 8..19 <= 1.0
+    - Al menos un factor > 0 entre 8..19.
+    """
+
+    def __init__(self, *args, factor_defs=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not factor_defs:
+            return
+
+        # Generar dinámicamente los campos 8–37
+        for pos in range(8, 38):
+            if pos not in factor_defs:
+                continue
+            fdef = factor_defs[pos]
+            field_name = f"factor_{pos}"
+
+            self.fields[field_name] = forms.DecimalField(
+                label=f"{pos:02d} — {fdef.nombre}",
+                required=False,
+                max_digits=9,  # 1 entero + 8 decimales
+                decimal_places=8,
+                initial=Decimal("0.00000000"),
+                widget=forms.NumberInput(attrs={
+                    "class": "form-control form-control-sm",
+                    "step": "0.00000001",
+                    "min": "0",
+                    "max": "1",
+                    "placeholder": "0.00000000",
+                }),
+                help_text=getattr(fdef, "descripcion", None),
+            )
+
+            # Función de limpieza individual por campo
+            def make_clean(fname):
+                def _clean(self):
+                    valor = self.cleaned_data.get(fname)
+                    if valor is None:
+                        return Decimal("0.00000000")
+                    if valor < 0:
+                        raise forms.ValidationError("El factor no puede ser negativo.")
+                    if valor > 1:
+                        raise forms.ValidationError("El factor no puede ser mayor a 1.")
+                    return valor.quantize(Decimal("0.00000000"), rounding="ROUND_HALF_UP")
+                return _clean
+
+            setattr(self, f"clean_{field_name}", make_clean(field_name).__get__(self, type(self)))
+
+    def clean(self):
+        """Validaciones generales de consistencia de factores."""
+        cleaned = super().clean()
+
+        suma_8_19 = Decimal("0")
+        tiene_valor = False
+
         for pos in range(8, 20):
-            v = self.cleaned_data.get(f"monto_{pos}")
-            if v:
-                total += v
-        return total
+            v = cleaned.get(f"factor_{pos}") or Decimal("0")
+            suma_8_19 += v
+            if v > 0:
+                tiene_valor = True
+
+        if suma_8_19 > Decimal("1.00000000"):
+            raise forms.ValidationError(
+                f"La suma de factores 8-19 ({suma_8_19}) excede 1.00000000. Ajusta los valores."
+            )
+        if not tiene_valor:
+            raise forms.ValidationError(
+                "Debes ingresar al menos un factor mayor a 0 en las posiciones 8-19."
+            )
+
+        return cleaned

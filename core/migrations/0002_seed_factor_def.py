@@ -47,7 +47,7 @@ def seed_factor_def(apps, schema_editor):
         )
 
 def link_existing_vals(apps, schema_editor):
-    """Enlaza TblFactorValor existentes con el catálogo por posición."""
+    """Enlaza TblFactorValor existentes con el catálogo por posición (si corresponde)."""
     TblFactorDef = apps.get_model("core", "TblFactorDef")
     TblFactorValor = apps.get_model("core", "TblFactorValor")
     defs = {d.posicion: d.id for d in TblFactorDef.objects.all()}
@@ -59,7 +59,7 @@ def link_existing_vals(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("core", "0005_tblfactordef_tblfactorvalor_factor_def"),
+        ("core", "0001_initial"),  # ← AJUSTA a tu última migración real
     ]
 
     operations = [

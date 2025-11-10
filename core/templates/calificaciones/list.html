@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}NUAM - Mantenedor de Calificaciones Tributarias{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{% static 'css/main.css' %}">
+{% endblock %}
+
+{% block main %}
+    <div class="header">
+        <div class="logo">NUAM - Mantenedor de Calificaciones</div>
+    </div>
+
+    <div class="container">
+        <!-- Mensajes de sistema (success, error, info) -->
+        {% if messages %}
+            <div class="mb-3">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Envolver los filtros en un form -->
+        <form method="get" id="form-filtros">
+            <div class="top-filters">
+                <div class="filters-grid">
+                    <div class="filter-item">
+                        <label for="mercado">Mercado:</label>
+                        <select name="mercado" class="form-control form-control-sm">
+                            <option value="">-- Todos los Mercados --</option>
+                            {% for m in mercados_disponibles %}
+                                <option value="{{ m.mercado_id }}" {% if filtro_mercado|stringformat:"s" == m.mercado_id|stringformat:"s" %}selected{% endif %}>
+                                    {{ m.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="origen">Origen</label>
+                        <select name="tipo_ingreso" class="form-control form-control-sm">
+                            <option value="">-- Todos los Tipos --</option>
+                            {% for t in tipos_ingreso_disponibles %}
+                                <option value="{{ t.tipo_ingreso_id }}" {% if filtro_tipo_ingreso|stringformat:"s" == t.tipo_ingreso_id|stringformat:"s" %}selected{% endif %}>
+                                    {{ t.nombre_tipo_ingreso }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="ejercicio">Periodo Comercial:</label>
+                        <select name="ejercicio" class="form-control form-control-sm">
+                            <option value="">-- Todos los Años --</option>
+                            {% for e in ejercicios_disponibles %}
+                                <option value="{{ e }}" {% if filtro_ejercicio|stringformat:"s" == e|stringformat:"s" %}selected{% endif %}>
+                                    {{ e }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="search-actions">
+                    <button type="submit" class="btn btn-primary btn-sm">🔍 BUSCAR</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-limpiar">🗑️ LIMPIAR</button>
+                </div>
+            </div>
+        </form>
+
+        <form method="post" action="{% url 'calificacion_delete_multiple' %}" id="form-delete-selected">
+            {% csrf_token %}
+
+            <div class="data-table">
+                <div class="table-wrapper">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                {% if perms.core.delete_tblcalificacion or perms.core.change_tblcalificacion %}
+                                    <th><input type="checkbox" id="checkbox-all" class="form-check-input"></th>
+                                {% endif %}
+                                <th>ID</th>
+                                <th>Ejercicio</th>
+                                <th>Instrumento</th>
+                                <th>Fecha Pago</th>
+                                <th>Descripción</th>
+                                <th>Secuencia Evento</th>
+                                <th>Factor de Actulizacion</th>
+                                <th>Factor 8</th>
+                                <th>Factor 9</th>
+                                <th>Factor 10</th>
+                                <th>Factor 11</th>
+                                <th>Factor 12</th>
+                                <th>Factor 13</th>
+                                <th>Factor 14</th>
+                                <th>Factor 15</th>
+                                <th>Factor 16</th>
+                                <th>Factor 17</th>
+                                <th>Factor 18</th>
+                                <th>Factor 19</th>
+                                <th>Factor 20</th>
+                                <th>Factor 21</th>
+                                <th>Factor 22</th>
+                                <th>Factor 23</th>
+                                <th>Factor 24</th>
+                                <th>Factor 25</th>
+                                <th>Factor 26</th>
+                                <th>Factor 27</th>
+                                <th>Factor 28</th>
+                                <th>Factor 29</th>
+                                <th>Factor 30</th>
+                                <th>Factor 31</th>
+                                <th>Factor 32</th>
+                                <th>Factor 33</th>
+                                <th>Factor 34</th>
+                                <th>Factor 35</th>
+                                <th>Factor 36</th>
+                                <th>Factor 37</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for it in items %}
+                            <tr>
+                                {% if perms.core.delete_tblcalificacion or perms.core.change_tblcalificacion %}
+                                    <td><input type="checkbox" name="ids[]" value="{{ it.pk }}" class="form-check-input row-checkbox"></td>
+                                {% endif %}
+                                <td class="fw-bold">{{ it.calificacion_id }}</td>
+                                <td>{{ it.ejercicio }}</td>
+                                <td>{{ it.instrumento_text|default:"-" }}</td>
+                                <td>{{ it.fecha_pago_dividendo|date:"d/m/Y" }}</td>
+                                <td>{{ it.descripcion|truncatewords:5|default:"-" }}</td>
+                                <td>{{ it.secuencia_evento }}</td>
+                                <td>{{ it.factor_actualizacion|floatformat:8|default:"-" }}</td>
+                                <td>{{ it.factores_array.0|default:"-"|floatformat:8 }}</td>  
+                                <td>{{ it.factores_array.1|default:"-"|floatformat:8 }}</td>  
+                                <td>{{ it.factores_array.2|default:"-"|floatformat:8 }}</td>  
+                                <td>{{ it.factores_array.3|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.4|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.5|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.6|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.7|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.8|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.9|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.10|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.11|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.12|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.13|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.14|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.15|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.16|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.17|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.18|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.19|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.20|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.21|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.22|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.23|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.24|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.25|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.26|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.27|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.28|default:"-"|floatformat:8 }}</td>
+                                <td>{{ it.factores_array.29|default:"-"|floatformat:8 }}</td> {# factor 37 #}
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="40" class="text-center text-muted py-5">
+                                    <div class="mb-2">📭</div>
+                                    <p class="mb-1">No hay calificaciones registradas</p>
+                                    <small>Haz clic en "Ingresar" para crear una nueva calificación</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="action-buttons mt-3">
+                <!-- submit realiza POST clásico; confirm evita borrados accidentales -->
+                {% if perms.core.delete_tblcalificacion %}
+                    <button type="submit" class="btn btn-danger" id="btn-eliminar" onclick="return confirmDelete()">🗑️ Eliminar seleccionadas</button>
+                {% endif %}
+                {% if perms.core.add_tblcalificacion %}
+                    <a href="{% url 'carga_manual' %}" class="btn btn-success">➕ Ingresar</a>
+                    <a href="{% url 'carga_masiva' %}" class="btn btn-secondary">📁 Carga Masiva</a>
+                {% endif %}
+                {% if perms.core.change_tblcalificacion %}
+                    <button type="button" class="btn btn-primary" id="btn-modificar" disabled>✏️ Modificar</button>
+                {% endif %}
+                <div>
+                    {% if user.is_superuser %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">⬅️ Volver al Dashboard</a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+
+        <!-- Footer con contador -->
+        {% if items %}
+        <div class="mt-3 text-muted small text-center">
+            Mostrando {{ items|length }} calificación{{ items|length|pluralize:"es" }}
+        </div>
+        {% endif %}
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxAll = document.getElementById('checkbox-all');
+        const checkboxes = Array.from(document.querySelectorAll('.row-checkbox'));
+        const btnEliminar = document.getElementById('btn-eliminar');
+        const btnModificar = document.getElementById('btn-modificar');
+
+        // URL plantilla para redirigir a editar; contiene pk=0 que reemplazamos por el id real
+        const editUrlTemplate = "{% url 'calificacion_edit' pk=0 %}";
+
+        function actualizarBoton() {
+            const seleccionados = checkboxes.filter(cb => cb.checked);
+            const any = seleccionados.length > 0;
+            btnEliminar.disabled = !any;
+
+            // Habilitar modificar solo cuando EXACTAMENTE 1 fila esté seleccionada
+            if (seleccionados.length === 1) {
+                btnModificar.disabled = false;
+                const id = seleccionados[0].value || seleccionados[0].getAttribute('value') || seleccionados[0].getAttribute('data-id');
+                // asignar handler para redirigir a la URL de edición de esa calificación
+                btnModificar.onclick = function () {
+                    // reemplazamos '/0/' por '/<id>/' (la plantilla tiene /0/ en la URL)
+                    const target = editUrlTemplate.replace('/0/', `/${id}/`);
+                    window.location.href = target;
+                };
+            } else {
+                btnModificar.disabled = true;
+                btnModificar.onclick = null;
+            }
+
+            // Mantener comportamiento del "select all"
+            if (checkboxes.length) {
+                const todos = checkboxes.every(cb => cb.checked);
+                const alguno = checkboxes.some(cb => cb.checked);
+                if (checkboxAll) {
+                    checkboxAll.checked = todos;
+                    checkboxAll.indeterminate = alguno && !todos;
+                }
+            }
+        }
+
+        if (checkboxAll) {
+            checkboxAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => cb.checked = this.checked);
+                actualizarBoton();
+            });
+        }
+
+        checkboxes.forEach(cb => cb.addEventListener('change', actualizarBoton));
+
+        // inicializar estado botones al cargar
+        actualizarBoton();
+    });
+
+    function confirmDelete() {
+        const selected = document.querySelectorAll('.row-checkbox:checked').length;
+        if (selected === 0) {
+            alert('Selecciona al menos una calificación para eliminar.');
+            return false;
+        }
+        return confirm(`¿Eliminar ${selected} calificación(es)?`);
+    }
+
+    // Agregar manejador para el botón limpiar
+    document.getElementById('btn-limpiar').addEventListener('click', function() {
+        // Limpiar todos los selects
+        document.querySelectorAll('#form-filtros select').forEach(select => {
+            select.value = '';
+        });
+        // Enviar el formulario
+        document.getElementById('form-filtros').submit();
+    });
+</script>
+{% endblock %}
