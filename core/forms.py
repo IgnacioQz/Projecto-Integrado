@@ -4,6 +4,8 @@
 from decimal import Decimal, InvalidOperation
 from django import forms
 from .models import TblCalificacion, TblMercado
+from django.utils import timezone
+
 
 
 # =============================================================================
@@ -23,6 +25,10 @@ DECIMAL_WIDGET_ATTRS = {
 # =============================================================================
 class CalificacionBasicaForm(forms.ModelForm):
     """Formulario para crear/editar datos básicos de una calificación."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        hoy = timezone.localdate().isoformat()  # 'YYYY-MM-DD'
+        self.fields["fecha_pago_dividendo"].widget.attrs["max"] = hoy
 
     # Campo mercado personalizado
     mercado = forms.ModelChoiceField(
@@ -66,7 +72,8 @@ class CalificacionBasicaForm(forms.ModelForm):
             }),
             "fecha_pago_dividendo": forms.DateInput(attrs={
                 "class": FORM_CONTROL_CLASS,
-                "type": "date"
+                "type": "date",
+                "min": "1980-01-01",
             }),
             "secuencia_evento": forms.NumberInput(attrs={
                 "class": FORM_CONTROL_CLASS,
@@ -90,8 +97,58 @@ class CalificacionBasicaForm(forms.ModelForm):
             "isfut": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "tipo_ingreso": forms.Select(attrs={"class": FORM_SELECT_CLASS}),
         }
-
-
+    def clean_instrumento_text(self):
+        instrumento = self.cleaned_data.get("instrumento_text", "").strip()
+        if not instrumento:
+            raise forms.ValidationError("El campo 'Instrumento' no puede estar vacío.")
+        return instrumento
+    
+    def clean_fecha_pago_dividendo(self):
+        fecha = self.cleaned_data.get("fecha_pago_dividendo")
+        if not fecha:
+            return fecha
+        hoy = timezone.localdate()  # respeta TIME_ZONE = 'America/Santiago'
+        if fecha > hoy:
+            raise forms.ValidationError("La fecha de pago no puede ser futura.")
+        return fecha
+    
+    def clean_secuencia_evento(self):
+        secuencia = self.cleaned_data.get("secuencia_evento")
+        if secuencia is not None and secuencia < 0:
+            raise forms.ValidationError("La secuencia del evento no puede ser negativa.")
+        return secuencia
+    
+    def clean_dividendo(self):
+        dividendo = self.cleaned_data.get("dividendo")
+        if dividendo is not None and dividendo < 0:
+            raise forms.ValidationError("El dividendo no puede ser negativo.")
+        return dividendo
+    
+    def clean_valor_historico(self):
+        valor = self.cleaned_data.get("valor_historico")
+        if valor is not None and valor < 0:
+            raise forms.ValidationError("El valor histórico no puede ser negativo.")
+        return valor
+    
+    def clean_factor_actualizacion(self):
+        factor = self.cleaned_data.get("factor_actualizacion")
+        if factor is not None and factor <= 0:
+            raise forms.ValidationError("El factor de actualización debe ser mayor a cero.")
+        return factor
+    
+    def clean_ejercicio(self):
+        ejercicio = self.cleaned_data.get("ejercicio")
+        if ejercicio is not None:
+            año_actual = timezone.localdate().year
+            if ejercicio < 1980 or ejercicio > año_actual:
+                raise forms.ValidationError(f"El ejercicio debe estar entre 1980 y {año_actual}.")
+        return ejercicio
+    
+    def clean_descripcion(self):
+        descripcion = self.cleaned_data.get("descripcion", "").strip()
+        if len(descripcion) > 300:
+            raise forms.ValidationError("La descripción no puede exceder los 200 caracteres.")
+        return descripcion
 # =============================================================================
 # FORMULARIO PASO 2-A: INGRESO DE MONTOS (AUTOMÁTICO)
 # =============================================================================
