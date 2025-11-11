@@ -191,6 +191,11 @@
                     <button type="button" class="btn btn-primary" id="btn-modificar" disabled>✏️ Modificar</button>
                 {% endif %}
                 <div>
+                    {% if es_analista or user.is_superuser %}
+                        <a href="{% url 'auditoria_list' %}" class="btn btn-outline-info">📝 Ver Auditoría</a>
+                    {% endif %}
+                </div>
+                <div>
                     {% if user.is_superuser %}
                         <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">⬅️ Volver al Dashboard</a>
                     {% endif %}

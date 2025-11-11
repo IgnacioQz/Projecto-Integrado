@@ -196,6 +196,8 @@ def main_view(request):
     filtro_tipo_ingreso = request.GET.get("tipo_ingreso", "")
     filtro_ejercicio = request.GET.get("ejercicio", "")
 
+    g_ana = Group.objects.get(name="AnalistaTributario")
+
     qs = (
         TblCalificacion.objects
         .select_related("mercado", "tipo_ingreso")
@@ -237,6 +239,7 @@ def main_view(request):
         "filtro_mercado": filtro_mercado,
         "filtro_tipo_ingreso": filtro_tipo_ingreso,
         "filtro_ejercicio": filtro_ejercicio,
+        "es_analista": _in_group(request.user, "AnalistaTributario"),
     }
     return render(request, "calificaciones/list.html", context)
 

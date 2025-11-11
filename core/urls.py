@@ -39,7 +39,7 @@ urlpatterns = [
     # ==========================================================================
     # Auditoría (placeholder)
     # ==========================================================================
-    path("auditoria/", auditoria_list, name="auditoria_list"),  # ✅ usa la vista importada
+    path("auditoria/", auditoria_list, name="auditoria_list"),  
     path("audit-ping/", audit_ping, name="audit_ping"),
 ]
 
