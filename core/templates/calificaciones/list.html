@@ -121,59 +121,35 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for it in items %}
-                            <tr>
-                                {% if perms.core.delete_tblcalificacion or perms.core.change_tblcalificacion %}
-                                    <td><input type="checkbox" name="ids[]" value="{{ it.pk }}" class="form-check-input row-checkbox"></td>
-                                {% endif %}
-                                <td class="fw-bold">{{ it.calificacion_id }}</td>
-                                <td>{{ it.ejercicio }}</td>
-                                <td>{{ it.instrumento_text|default:"-" }}</td>
-                                <td>{{ it.fecha_pago_dividendo|date:"d/m/Y" }}</td>
-                                <td>{{ it.descripcion|truncatewords:5|default:"-" }}</td>
-                                <td>{{ it.secuencia_evento }}</td>
-                                <td>{{ it.factor_actualizacion|floatformat:8|default:"-" }}</td>
-                                <td>{{ it.factores_array.0|default:"-"|floatformat:8 }}</td>  
-                                <td>{{ it.factores_array.1|default:"-"|floatformat:8 }}</td>  
-                                <td>{{ it.factores_array.2|default:"-"|floatformat:8 }}</td>  
-                                <td>{{ it.factores_array.3|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.4|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.5|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.6|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.7|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.8|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.9|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.10|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.11|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.12|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.13|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.14|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.15|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.16|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.17|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.18|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.19|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.20|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.21|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.22|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.23|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.24|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.25|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.26|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.27|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.28|default:"-"|floatformat:8 }}</td>
-                                <td>{{ it.factores_array.29|default:"-"|floatformat:8 }}</td> {# factor 37 #}
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="40" class="text-center text-muted py-5">
-                                    <div class="mb-2">📭</div>
-                                    <p class="mb-1">No hay calificaciones registradas</p>
-                                    <small>Haz clic en "Ingresar" para crear una nueva calificación</small>
+                        {% for it in items %}
+                        <tr class="clickable-row" data-href="{% url 'calificacion_detalles' it.pk %}">
+                            {% if perms.core.delete_tblcalificacion or perms.core.change_tblcalificacion %}
+                                <td>
+                                    <input type="checkbox" name="ids[]" value="{{ it.pk }}" class="form-check-input row-checkbox" onclick="event.stopPropagation();">
                                 </td>
-                            </tr>
+                            {% endif %}
+                            <td class="fw-bold">{{ it.calificacion_id }}</td>
+                            <td>{{ it.ejercicio }}</td>
+                            <td>{{ it.instrumento_text|default:"-" }}</td>
+                            <td>{{ it.fecha_pago_dividendo|date:"d/m/Y" }}</td>
+                            <td>{{ it.descripcion|truncatewords:5|default:"-" }}</td>
+                            <td>{{ it.secuencia_evento }}</td>
+                            <td>{{ it.factor_actualizacion|floatformat:8|default:"-" }}</td>
+                            {% for f in it.factores_array %}
+                                <td>{{ f|default:"-"|floatformat:8 }}</td>
                             {% endfor %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="40" class="text-center text-muted py-5">
+                                <div class="mb-2">📭</div>
+                                <p class="mb-1">No hay calificaciones registradas</p>
+                                <small>Haz clic en "Ingresar" para crear una nueva calificación</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
                         </tbody>
+
                     </table>
                 </div>
             </div>
@@ -282,5 +258,15 @@
         // Enviar el formulario
         document.getElementById('form-filtros').submit();
     });
+
+        // === Redirigir al hacer clic en una fila ===
+    document.querySelectorAll('.clickable-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.tagName.toLowerCase() === 'input') return;
+            const href = this.getAttribute('data-href');
+            if (href) window.location.href = href;
+        });
+    });
+
 </script>
 {% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Detalles de Calificación - NUAM{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{% static 'css/detalles.css' %}">
+{% endblock %}
+
+{% block main %}
+<div class="container-hero">
+  <div class="details-card">
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4 m-0">
+        Calificación #{{ calificacion.pk }}
+        <small class="text-muted">— {{ calificacion.instrumento_text }} ({{ calificacion.ejercicio }})</small>
+      </h1>
+      <div class="d-flex gap-2">
+        {% if perms.core.change_tblcalificacion %}
+          <a href="{% url 'calificacion_edit' pk=calificacion.pk %}" class="btn btn-primary btn-sm">✏️ Editar</a>
+        {% endif %}
+        <a href="{% url 'main' %}" class="btn btn-outline-secondary btn-sm">⬅️ Volver</a>
+      </div>
+    </div>
+
+    <!-- Datos principales -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-3"><strong>Mercado:</strong><br>{{ calificacion.mercado }}</div>
+      <div class="col-md-3"><strong>Tipo Ingreso:</strong><br>{{ calificacion.tipo_ingreso }}</div>
+      <div class="col-md-3"><strong>Fecha Pago:</strong><br>{{ calificacion.fecha_pago_dividendo|date:"d/m/Y" }}</div>
+      <div class="col-md-3"><strong>Secuencia Evento:</strong><br>{{ calificacion.secuencia_evento }}</div>
+
+      <div class="col-md-4"><strong>Dividendo:</strong><br>{{ calificacion.dividendo }}</div>
+      <div class="col-md-4"><strong>Valor Histórico:</strong><br>{{ calificacion.valor_historico }}</div>
+      <div class="col-md-4"><strong>Factor Actualización:</strong><br>{{ calificacion.factor_actualizacion|floatformat:6 }}</div>
+
+      <div class="col-md-6"><strong>Ejercicio:</strong><br>{{ calificacion.ejercicio }}</div>
+      <div class="col-md-6"><strong>ISFUT:</strong><br>{{ calificacion.isfut|yesno:"Sí,No" }}</div>
+
+      <div class="col-12">
+        <strong>Descripción:</strong><br>{{ calificacion.descripcion|default:"—" }}
+      </div>
+    </div>
+
+    <!-- Factores -->
+    <h2 class="h6 section-title">Factores (Posiciones 8 a 37)</h2>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover table-factores">
+        <thead class="table-light">
+          <tr>
+            <th style="width:80px;">Posición</th>
+            <th>Nombre del Factor</th>
+            <th style="width:160px;" class="text-end">Monto Base</th>
+            <th style="width:160px;" class="text-end">Valor (0..1)</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% if factores_rows %}
+              {% for row in factores_rows %}
+                <tr>
+                  <td>{{ row.posicion }}</td>
+                  <td>{{ row.nombre }}</td>
+                  <td class="text-end">{% if row.monto_base != None %}{{ row.monto_base|floatformat:2 }}{% else %}—{% endif %}</td>
+                  <td class="text-end">{{ row.valor|floatformat:8 }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-3">No hay factores ingresados para esta calificación.</td>
+              </tr>
+            {% endif %}
+        </tbody>
+
+      </table>
+    </div>
+
+    <!-- Metadatos -->
+    <div class="mt-3 text-muted small">
+      <div><strong>Creada:</strong> {{ calificacion.fecha_creacion|date:"d/m/Y" }}</div>
+      <div><strong>Última modificación:</strong> {{ calificacion.fecha_modificacion|date:"d/m/Y H:i" }}</div>
+      <div><strong>Usuario (última mod.):</strong> {{ calificacion.usuario.get_full_name|default:calificacion.usuario.username }}</div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

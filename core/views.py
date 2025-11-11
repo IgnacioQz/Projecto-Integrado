@@ -9,6 +9,8 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User, Group
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Prefetch
+
 
 from .models import (
     TblCalificacion, TblFactorValor, TblFactorDef,
@@ -196,7 +198,6 @@ def main_view(request):
     filtro_tipo_ingreso = request.GET.get("tipo_ingreso", "")
     filtro_ejercicio = request.GET.get("ejercicio", "")
 
-    g_ana = Group.objects.get(name="AnalistaTributario")
 
     qs = (
         TblCalificacion.objects
@@ -498,3 +499,51 @@ def calificacion_delete(request):
         return redirect("main")
 
     return redirect("main")
+
+
+# =============================================================================
+#  Detalle de califiaciones
+# =============================================================================
+
+@login_required(login_url="login")
+def calificacion_detalles(request, pk: int):
+    """
+    Detalle de calificación que muestra el nombre del factor.
+    - Toma el nombre desde fv.factor_def.nombre cuando existe
+    - Si no, usa el catálogo TblFactorDef por posición (fallback)
+    """
+    calificacion = (
+        TblCalificacion.objects
+        .select_related("mercado", "tipo_ingreso")
+        .get(pk=pk)
+    )
+
+    # Factores 8..37 con su definición (si está enlazada)
+    factores_qs = (
+        calificacion.factores
+        .filter(posicion__gte=8, posicion__lte=37)
+        .select_related("factor_def")
+        .order_by("posicion")
+    )
+
+    # Catálogo por posición para fallback
+    def_map = {
+        d.posicion: d.nombre
+        for d in TblFactorDef.objects.filter(posicion__gte=8, posicion__lte=37, activo=True)
+    }
+
+    # Normalizar filas para el template
+    factores_rows = []
+    for fv in factores_qs:
+        nombre = fv.factor_def.nombre if fv.factor_def else def_map.get(fv.posicion, f"Factor {fv.posicion}")
+        factores_rows.append({
+            "posicion": fv.posicion,
+            "nombre": nombre,
+            "monto_base": fv.monto_base,
+            "valor": fv.valor,
+        })
+
+    return render(request, "calificaciones/detalles.html", {
+        "calificacion": calificacion,   # usa 'calificacion' en el template
+        "factores_rows": factores_rows, # lista lista para iterar
+    })

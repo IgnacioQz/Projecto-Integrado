@@ -41,6 +41,12 @@ urlpatterns = [
     # ==========================================================================
     path("auditoria/", auditoria_list, name="auditoria_list"),  
     path("audit-ping/", audit_ping, name="audit_ping"),
+
+
+    # ==========================================================================
+    # vista detalles calificacion
+    # ==========================================================================
+    path("calificaciones/<int:pk>/detalles/", views.calificacion_detalles, name="calificacion_detalles"),
 ]
 
 
