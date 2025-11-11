@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}<title>Carga Masiva de Calificaciones</title>{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{% static 'css/cargaMasiva.css' %}">
+{% endblock %}
+
+{% block main %}
+<div class="modal-overlay">
+  <div class="modal-container-upload">
+
+    <div class="modal-header">
+      <h2>📁 Carga Masiva de Calificaciones</h2>
+      <p class="modal-subtitle">CSV por montos o factores</p>
+    </div>
+
+    <div class="modal-body">
+      <!-- Zona de carga -->
+      <div class="upload-section">
+        <form id="uploadForm" method="post" enctype="multipart/form-data" action="{% url 'csv_carga' %}">
+          {% csrf_token %}
+          <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">📂</div>
+            <h3>Arrastre su archivo aquí</h3>
+            <p>o haga clic para seleccionar</p>
+            <input type="file" name="archivo" id="fileInput" accept=".csv" hidden required>
+            <button type="button" class="btn-select-file" id="btnSelectFile">Seleccionar Archivo</button>
+          </div>
+        </form>
+      </div>
+
+      {% if preview_rows %}
+        <!-- Info archivo -->
+        <div class="file-info">
+          <div class="file-info-content">
+            <div class="file-icon">📄</div>
+            <div class="file-details">
+              <h4>{{ request.session.csv_meta.nombre|default:"archivo.csv" }}</h4>
+              <p>{{ total }} registros detectados</p>
+            </div>
+            <button type="button" class="btn-remove-file" id="btnRemoveFile">✕</button>
+          </div>
+        </div>
+
+        <!-- Validación -->
+        <div class="validation-section">
+          <h3 class="section-title">🔍 Validación de Datos</h3>
+
+          <div class="validation-summary">
+            <div class="validation-item validation-success">
+              <span class="validation-icon">✓</span>
+              <span class="validation-text">Formato válido</span>
+            </div>
+            <div class="validation-item validation-success">
+              <span class="validation-icon">✓</span>
+              <span class="validation-text">Estructura de columnas correcta</span>
+            </div>
+            <div class="validation-item validation-warning">
+              <span class="validation-icon">⚠</span>
+              <span class="validation-text">{{ advertencias }} registros con advertencias</span>
+            </div>
+            <div class="validation-item validation-error">
+              <span class="validation-icon">✕</span>
+              <span class="validation-text">{{ errores }} registros con errores</span>
+            </div>
+          </div>
+
+          <div class="validation-stats">
+            <div class="stat-card stat-total">
+              <div class="stat-number">{{ total }}</div>
+              <div class="stat-label">Total Registros</div>
+            </div>
+            <div class="stat-card stat-valid">
+              <div class="stat-number">{{ validos }}</div>
+              <div class="stat-label">Válidos</div>
+            </div>
+            <div class="stat-card stat-warning">
+              <div class="stat-number">{{ advertencias }}</div>
+              <div class="stat-label">Advertencias</div>
+            </div>
+            <div class="stat-card stat-error">
+              <div class="stat-number">{{ errores }}</div>
+              <div class="stat-label">Errores</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Previsualización -->
+        <div class="preview-section">
+          <h3 class="section-title">👁️ Previsualización de Datos</h3>
+          <div class="preview-controls">
+            <div class="preview-info">
+              Mostrando primeros 5 registros de <strong>{{ total }}</strong> — modo <code>{{ modo_detectado }}</code>
+            </div>
+          </div>
+          <div class="table-preview-wrapper">
+            {% include "sandbox/_preview_table.html" %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="modal-footer">
+      <a href="{% url 'main' %}" class="btn-modal btn-cancel">✕ Cancelar</a>
+      {% if preview_rows %}
+      <form method="post" action="{% url 'csv_carga_confirm' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-modal btn-import">📥 Importar Calificaciones</button>
+      </form>
+      {% else %}
+      <button class="btn-modal btn-validate" id="btnValidate" disabled>🔍 Validar Archivo</button>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const uploadForm  = document.getElementById('uploadForm');
+  const input       = document.getElementById('fileInput');
+  const btnSelect   = document.getElementById('btnSelectFile');
+  const zone        = document.getElementById('uploadZone');
+  const btnRemove   = document.getElementById('btnRemoveFile');
+  const btnValidate = document.getElementById('btnValidate');
+
+  if (btnSelect) btnSelect.addEventListener('click', () => input.click());
+  if (input) input.addEventListener('change', () => { if (input.files.length) uploadForm.submit(); });
+
+  if (zone) {
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      input.files = e.dataTransfer.files;
+      zone.classList.remove('drag-over');
+      if (input.files.length) uploadForm.submit();
+    });
+  }
+  if (btnRemove) btnRemove.addEventListener('click', () => { window.location.href = "{% url 'csv_carga' %}"; });
+</script>
+{% endblock %}
