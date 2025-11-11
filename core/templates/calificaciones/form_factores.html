@@ -314,6 +314,7 @@
             <tbody>
               {% for pos, row in factores.items %}
                 <tr {% if pos >= 8 and pos <= 19 %}class="table-primary"{% endif %}>  
+                  <td>{{ pos }}</td>
                   <td>{{ row.nombre }}</td>
                   {% if modo_ingreso == 'montos' %}
                   <td>{{ row.monto }}</td>
