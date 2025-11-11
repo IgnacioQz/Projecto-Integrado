@@ -1,0 +1,26 @@
+Collecting pdfplumber
+  Downloading pdfplumber-0.11.8-py3-none-any.whl (60 kB)
+     ---------------------------------------- 60.0/60.0 kB 3.1 MB/s eta 0:00:00
+Collecting pdfminer.six==20251107 (from pdfplumber)
+  Downloading pdfminer_six-20251107-py3-none-any.whl (5.6 MB)
+     ---------------------------------------- 5.6/5.6 MB 71.9 MB/s eta 0:00:00
+Collecting Pillow>=9.1 (from pdfplumber)
+  Downloading pillow-12.0.0-cp311-cp311-win_amd64.whl (7.0 MB)
+     ---------------------------------------- 7.0/7.0 MB 89.6 MB/s eta 0:00:00
+Collecting pypdfium2>=4.18.0 (from pdfplumber)
+  Downloading pypdfium2-5.0.0-py3-none-win_amd64.whl (3.1 MB)
+     ---------------------------------------- 3.1/3.1 MB 65.6 MB/s eta 0:00:00
+Collecting charset-normalizer>=2.0.0 (from pdfminer.six==20251107->pdfplumber)
+  Downloading charset_normalizer-3.4.4-cp311-cp311-win_amd64.whl (106 kB)
+     ---------------------------------------- 107.0/107.0 kB ? eta 0:00:00
+Collecting cryptography>=36.0.0 (from pdfminer.six==20251107->pdfplumber)
+  Downloading cryptography-46.0.3-cp311-abi3-win_amd64.whl (3.5 MB)
+     ---------------------------------------- 3.5/3.5 MB 74.6 MB/s eta 0:00:00
+Collecting cffi>=2.0.0 (from cryptography>=36.0.0->pdfminer.six==20251107->pdfplumber)
+  Downloading cffi-2.0.0-cp311-cp311-win_amd64.whl (182 kB)
+     ------------------------------------- 182.8/182.8 kB 10.8 MB/s eta 0:00:00
+Collecting pycparser (from cffi>=2.0.0->cryptography>=36.0.0->pdfminer.six==20251107->pdfplumber)
+  Downloading pycparser-2.23-py3-none-any.whl (118 kB)
+     ---------------------------------------- 118.1/118.1 kB ? eta 0:00:00
+Installing collected packages: pypdfium2, pycparser, Pillow, charset-normalizer, cffi, cryptography, pdfminer.six, pdfplumber
+Successfully installed Pillow-12.0.0 cffi-2.0.0 charset-normalizer-3.4.4 cryptography-46.0.3 pdfminer.six-20251107 pdfplumber-0.11.8 pycparser-2.23 pypdfium2-5.0.0

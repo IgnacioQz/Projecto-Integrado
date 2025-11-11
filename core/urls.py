@@ -1,6 +1,7 @@
 # core/urls.py
 from django.urls import path
 from . import views
+from .views_ingestion import sandbox_upload, sandbox_confirm 
 from .views_audit import auditoria_list, audit_ping 
 
 urlpatterns = [
@@ -41,6 +42,10 @@ urlpatterns = [
     # ==========================================================================
     path("auditoria/", auditoria_list, name="auditoria_list"),  # ✅ usa la vista importada
     path("audit-ping/", audit_ping, name="audit_ping"),
+
+    path("sandbox/carga/", sandbox_upload, name="sandbox_carga"),
+    path("sandbox/carga/confirmar/", sandbox_confirm, name="sandbox_carga_confirm"),
 ]
+
 
 
