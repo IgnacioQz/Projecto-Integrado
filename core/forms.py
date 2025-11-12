@@ -107,7 +107,7 @@ class CalificacionBasicaForm(forms.ModelForm):
         fecha = self.cleaned_data.get("fecha_pago_dividendo")
         if not fecha:
             return fecha
-        hoy = timezone.localdate()  # respeta TIME_ZONE = 'America/Santiago'
+        hoy = timezone.localdate()  
         if fecha > hoy:
             raise forms.ValidationError("La fecha de pago no puede ser futura.")
         return fecha
@@ -147,7 +147,7 @@ class CalificacionBasicaForm(forms.ModelForm):
     def clean_descripcion(self):
         descripcion = self.cleaned_data.get("descripcion", "").strip()
         if len(descripcion) > 300:
-            raise forms.ValidationError("La descripción no puede exceder los 200 caracteres.")
+            raise forms.ValidationError("La descripción no puede exceder los 300 caracteres.")
         return descripcion
 # =============================================================================
 # FORMULARIO PASO 2-A: INGRESO DE MONTOS (AUTOMÁTICO)
