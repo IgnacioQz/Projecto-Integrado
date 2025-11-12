@@ -1,4 +1,3 @@
-# core/views_ingestions_csv.py
 from __future__ import annotations
 from decimal import Decimal
 from io import TextIOWrapper
@@ -8,7 +7,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
 from django.shortcuts import render, redirect
 
-from core.models import TblCalificacion, TblFactorValor, TblArchivoFuente, TblTipoIngreso, TblFactorDef
+from core.models import TblCalificacion, TblFactorValor, TblArchivoFuente, TblTipoIngreso
 from core.views import _round8, _build_def_map, POS_MIN, POS_BASE_MAX, POS_MAX
 from core.ingestion_helpers import (
     to_int, to_dec, is_monto_col, is_factor_col,
@@ -20,9 +19,29 @@ CSV_SESSION_MODE = "csv_mode"
 CSV_SESSION_META = "csv_meta"
 
 
-# =============================================================================
-# CARGA CSV
-# =============================================================================
+def _detalle_factores_text(d: dict[int, Decimal], modo: str) -> str:
+    """
+    Construye un string corto con los primeros factores/montos != 0.
+    Ej: 'F8=0.80000000, F9=0.20000000'  o  'F8=$30000.00, F9=$20000.00'
+    """
+    pares = []
+    # recorro en orden de posición 8..37
+    for p in range(POS_MIN, POS_MAX + 1):
+        if p in d and d[p] not in (None, Decimal("0"), Decimal("0.00000000")):
+            v = d[p]
+            if modo == "montos":
+                pares.append(f"F{p}=${v:.2f}")
+            else:
+                # factores
+                try:
+                    pares.append(f"F{p}={Decimal(v):.8f}")
+                except Exception:
+                    pares.append(f"F{p}={v}")
+        if len(pares) >= 6:  # no saturar
+            break
+    return ", ".join(pares) if pares else "(sin valores)"
+
+
 
 @login_required(login_url="login")
 @permission_required("core.add_tblcalificacion", raise_exception=True)
@@ -39,26 +58,37 @@ def csv_upload(request):
                 messages.warning(request, "No se detectaron filas válidas.")
                 return render(request, "sandbox/carga_csv.html")
 
+            # anota warnings/errores + agregados de preview
             annotate_preview(rows, modo)
+
+            # guarda en sesión
             request.session[CSV_SESSION_ROWS] = rows
             request.session[CSV_SESSION_MODE] = modo
             request.session[CSV_SESSION_META] = {"nombre": f.name}
             request.session.modified = True
 
             total = len(rows)
-            warnings = sum(1 for r in rows if r.get("pre_warning"))
-            errors   = sum(1 for r in rows if r.get("pre_error"))
-            validos  = total - warnings - errors
+            errores = sum(1 for r in rows if r.get("pre_error"))
+            advertencias = sum(1 for r in rows if r.get("pre_warning"))
+            validos = total - errores - advertencias
+
+            # 👇 clave para la template
+            can_import = (errores == 0)
 
             return render(request, "sandbox/carga_csv.html", {
                 "preview_rows": rows[:5],
                 "modo_detectado": modo,
-                "total": total, "validos": validos, "advertencias": warnings, "errores": errors,
+                "total": total,
+                "validos": validos,
+                "advertencias": advertencias,
+                "errores": errores,
+                "can_import": can_import,
             })
         except Exception as ex:
             messages.error(request, f"Error al procesar CSV: {ex}")
             return render(request, "sandbox/carga_csv.html")
 
+    # GET o primera carga sin archivo
     return render(request, "sandbox/carga_csv.html")
 
 
@@ -76,6 +106,17 @@ def csv_confirm(request):
         messages.error(request, "No hay vista previa en sesión.")
         return redirect("csv_carga")
 
+    # ✅ bloqueo server-side si existe cualquier error en la preview
+    if any(r.get("pre_error") for r in rows):
+        messages.error(request, "No se puede importar: existen registros con errores en la validación.")
+        return redirect("csv_carga")
+
+    # (opcional) si quieres recalcular por seguridad:
+    # from core.ingestion_helpers import annotate_preview
+    # annotate_preview(rows, modo)
+    # if any(r.get("pre_error") for r in rows): ...
+
+    # --- persistencia normal (tu lógica actual) ---
     try:
         archivo_fuente = TblArchivoFuente.objects.create(
             nombre_archivo=meta.get("nombre", "csv_sandbox"),
@@ -134,9 +175,6 @@ def csv_confirm(request):
                         "fecha_pago_dividendo","usuario","archivo_fuente"
                     ])
 
-                # =================================================================
-                #   MONTO o FACTORES
-                # =================================================================
                 if modo == "montos":
                     from decimal import Decimal as D
                     total_base = D("0"); montos = {}
@@ -155,17 +193,11 @@ def csv_confirm(request):
                     for pos in range(POS_MIN, POS_MAX + 1):
                         m = montos.get(pos, D("0"))
                         factor = _round8(m / total_base) if total_base > 0 else D("0")
-                        factor_def = def_map.get(pos)
                         TblFactorValor.objects.update_or_create(
                             calificacion=calif, posicion=pos,
-                            defaults={
-                                "monto_base": m,
-                                "valor": factor,
-                                "factor_def": factor_def,
-                            }
+                            defaults={"monto_base": m, "valor": factor}
                         )
-
-                else:  # modo FACTORES
+                else:  # factores
                     from decimal import Decimal as D
                     suma_8_19 = D("0"); factores = {}
                     for k, v in r.items():
@@ -182,14 +214,9 @@ def csv_confirm(request):
 
                     for pos in range(POS_MIN, POS_MAX + 1):
                         f = factores.get(pos, D("0"))
-                        factor_def = def_map.get(pos)
                         TblFactorValor.objects.update_or_create(
                             calificacion=calif, posicion=pos,
-                            defaults={
-                                "monto_base": None,
-                                "valor": f,
-                                "factor_def": factor_def,
-                            }
+                            defaults={"monto_base": None, "valor": f}
                         )
 
                 if was_created: created += 1
@@ -199,7 +226,7 @@ def csv_confirm(request):
                 skipped += 1
                 errores.append(f"Fila {i}: {ex}")
 
-    # Limpieza de sesión
+    # limpia sesión
     for key in (CSV_SESSION_ROWS, CSV_SESSION_MODE, CSV_SESSION_META):
         request.session.pop(key, None)
 
