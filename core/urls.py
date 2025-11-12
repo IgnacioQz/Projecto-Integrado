@@ -1,7 +1,6 @@
 # core/urls.py
 from django.urls import path
 from . import views
-from .views_ingestion import sandbox_upload, sandbox_confirm 
 from .views_audit import auditoria_list, audit_ping 
 from . import views_ingestion_csv as csvv
 from . import views_ingestion_pdf as pdfv
