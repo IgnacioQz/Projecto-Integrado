@@ -368,7 +368,7 @@ def calificacion_edit(request, pk: int):
                             defaults={
                                 "monto_base": row["monto"],
                                 "valor": row["factor"],
-                                "factor_def": def_map.get(pos),  # ✅ agregado
+                                "factor_def": def_map.get(pos),  
                             },
                         )
                     calif.usuario = request.user

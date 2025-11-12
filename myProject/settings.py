@@ -80,11 +80,11 @@ WSGI_APPLICATION = 'myProject.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("NAME"),          # 👈 nombre exacto de tu base en pgAdmin
-        "USER": env("USER"),          # 👈 usuario de pgAdmin
-        "PASSWORD": env("PASSWORD"),  # 👈 la contraseña que definiste
-        "HOST": env("HOST"),          # 👈 probablemente localhost 
-        "PORT": env("PORT"),          # 👈 el puerto que usas, por defecto 5432
+        "NAME": env("NAME"),         
+        "USER": env("USER"),          
+        "PASSWORD": env("PASSWORD"),  
+        "HOST": env("HOST"),          
+        "PORT": env("PORT"),          
     }
 }
 
