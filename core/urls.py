@@ -1,7 +1,10 @@
 # core/urls.py
 from django.urls import path
 from . import views
+from .views_ingestion import sandbox_upload, sandbox_confirm 
 from .views_audit import auditoria_list, audit_ping 
+from . import views_ingestion_csv as csvv
+from . import views_ingestion_pdf as pdfv
 
 urlpatterns = [
     # ==========================================================================
@@ -47,6 +50,12 @@ urlpatterns = [
     # vista detalles calificacion
     # ==========================================================================
     path("calificaciones/<int:pk>/detalles/", views.calificacion_detalles, name="calificacion_detalles"),
+    path("sandbox/csv/", csvv.csv_upload, name="csv_carga"),
+    path("sandbox/csv/confirmar/", csvv.csv_confirm, name="csv_carga_confirm"),
+
+    path("sandbox/pdf/", pdfv.pdf_upload, name="pdf_carga"),
+    path("sandbox/pdf/confirmar/", pdfv.pdf_confirm, name="pdf_carga_confirm"),
 ]
+
 
 

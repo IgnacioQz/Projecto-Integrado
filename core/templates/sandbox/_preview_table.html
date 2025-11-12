@@ -1,0 +1,43 @@
+<table class="table-preview">
+  <thead>
+    <tr>
+      <th class="col-status">Estado</th>
+      <th>Ejercicio</th>
+      <th>Mercado</th>
+      <th>Instrumento</th>
+      <th>Fecha Pago</th>
+      <th>Secuencia</th>
+      <th>Descripción</th>
+      <th class="text-end">Factores≠0</th>
+      <th class="text-end">Suma 8–19</th>
+    </tr>
+  </thead>
+  <tbody id="previewTableBody">
+    {% for r in preview_rows %}
+
+      {% if r.pre_error %}
+        <tr class="row-error">
+          <td class="col-status"><span class="status-badge status-error">✕</span></td>
+      {% elif r.pre_warning %}
+        <tr class="row-warning">
+          <td class="col-status"><span class="status-badge status-warning">⚠</span></td>
+      {% else %}
+        <tr class="row-valid">
+          <td class="col-status"><span class="status-badge status-ok">✓</span></td>
+      {% endif %}
+
+        <td>{{ r.ejercicio }}</td>
+        <td>{{ r.mercado_cod }}</td>
+        <td>{{ r.nemo }}</td>
+        <td>{{ r.fecha_pago }}</td>
+        <td{% if r.pre_error %} class="cell-error"{% endif %}>{{ r.sec_eve }}</td>
+        <td>{{ r.descripcion }}</td>
+        <td class="text-end">{{ r.factores_con_valor|default:"0" }}</td>
+        <td class="text-end">{{ r.suma_8_19|default:"0" }}</td>
+      </tr>
+
+    {% empty %}
+      <tr><td colspan="9" style="text-align:center;color:#666;">Sin filas</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

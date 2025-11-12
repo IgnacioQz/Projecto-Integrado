@@ -365,7 +365,11 @@ def calificacion_edit(request, pk: int):
                         TblFactorValor.objects.update_or_create(
                             calificacion=calif,
                             posicion=pos,
-                            defaults={"monto_base": row["monto"], "valor": row["factor"]},
+                            defaults={
+                                "monto_base": row["monto"],
+                                "valor": row["factor"],
+                                "factor_def": def_map.get(pos),  # ✅ agregado
+                            },
                         )
                     calif.usuario = request.user
                     calif.save(update_fields=["usuario"])
@@ -426,7 +430,11 @@ def calificacion_edit(request, pk: int):
                         TblFactorValor.objects.update_or_create(
                             calificacion=calif,
                             posicion=pos,
-                            defaults={"monto_base": None, "valor": row["factor"]},
+                            defaults={
+                                "monto_base": None,
+                                "valor": row["factor"],
+                                "factor_def": def_map.get(pos),  # ✅ agregado
+                            },
                         )
                     calif.usuario = request.user
                     calif.save(update_fields=["usuario"])
@@ -442,6 +450,22 @@ def calificacion_edit(request, pk: int):
                 "modo_ingreso": modo_ingreso,
             })
 
+    # -------------------------------------------------------------------------
+    # GET (carga inicial)
+    # -------------------------------------------------------------------------
+    montos_form = MontosForm(initial=initial_montos, factor_defs=def_map)
+    factores_form = FactoresForm(initial=initial_factores, factor_defs=def_map)
+
+    if not calif.factores.exists():
+        messages.warning(request, "⚠️ Calificación incompleta. Debes ingresar montos o factores.")
+
+    return render(request, "calificaciones/form_factores.html", {
+        "calif": calif,
+        "montos_form": montos_form,
+        "factores_form": factores_form,
+        "def_map": def_map,
+        "modo_ingreso": modo_ingreso,
+    })
     # -------------------------------------------------------------------------
     # GET (carga inicial)
     # -------------------------------------------------------------------------
