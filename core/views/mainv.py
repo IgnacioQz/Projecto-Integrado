@@ -1,4 +1,14 @@
 # core/views.py
+"""
+Vistas principales del Mantenedor de Calificaciones:
+- Dashboard / Auditoría (placeholder)
+- Autenticación (welcome / login / logout)
+- Listado con filtros (main_view)
+- Creación manual (paso 1) y edición (paso 2)
+- Eliminación múltiple
+- Detalle de calificación
+"""
+
 # =============================================================================
 # IMPORTACIONES
 # =============================================================================
@@ -7,52 +17,47 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User, Group
-from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Prefetch
 
-
-from .models import (
+from core.models import (
     TblCalificacion, TblFactorValor, TblFactorDef,
     TblTipoIngreso, TblMercado
 )
-from .forms import CalificacionBasicaForm, MontosForm, FactoresForm
+from core.forms import CalificacionBasicaForm, MontosForm, FactoresForm
 
 
 # =============================================================================
-# CONSTANTES DE DOMINIO (evitan “números mágicos”)
+# CONSTANTES DE DOMINIO 
 # =============================================================================
 POS_MIN = 8
-POS_BASE_MAX = 19   # para sumatoria base (8..19)
+POS_BASE_MAX = 19   # rango base para sumatoria (8..19)
 POS_MAX = 37
-FACTOR_MAX_SUM = Decimal("1.00000000")
+FACTOR_MAX_SUM = Decimal("1.00000000")  # tope de suma en 8..19
 
 
 # =============================================================================
-# UTILIDADES (rounding, grupos, redirects)
+# UTILIDADES (redondeo, grupos, redirect post-login)
 # =============================================================================
 def _round8(x: Decimal) -> Decimal:
-    """Redondea a 8 decimales (ROUND_HALF_UP)."""
+    """Redondea a 8 decimales con HALF_UP (ej.: 0.123456789 -> 0.12345679)."""
     return x.quantize(Decimal("0.00000001"), rounding=ROUND_HALF_UP)
 
-
 def _in_group(user, group_name: str) -> bool:
-    """Verifica si un usuario pertenece a un grupo."""
+    """¿El usuario pertenece al grupo indicado?"""
     return user.groups.filter(name=group_name).exists()
 
-
 def _redirect_after_login(user):
-    """Destino único tras login: Admin → dashboard, otros → main."""
+    """Después de login: Admin → dashboard, resto → main."""
     if user.is_superuser or _in_group(user, "Administrador"):
         return redirect("dashboard")
     return redirect("main")
 
 
 # =============================================================================
-# HELPERS DE NEGOCIO (factores/montos)
+# HELPERS DE NEGOCIO (catálogo factores + armado de initial)
 # =============================================================================
 def _build_def_map():
-    """Catálogo {pos: TblFactorDef} sólo para posiciones 8..37 activas."""
+    """Devuelve {pos: TblFactorDef} solo para posiciones activas 8..37."""
     defs_qs = (
         TblFactorDef.objects
         .filter(posicion__gte=POS_MIN, posicion__lte=POS_MAX, activo=True)
@@ -60,25 +65,22 @@ def _build_def_map():
     )
     return {d.posicion: d for d in defs_qs}
 
-
 def _initial_data(calif: TblCalificacion):
-    """Construye initial data para formularios de montos y factores."""
+    """Construye initial data (montos/factores) para precargar formularios."""
     qs = calif.factores.filter(posicion__gte=POS_MIN, posicion__lte=POS_MAX)
     initial_montos = {f"monto_{fv.posicion}": fv.monto_base for fv in qs}
     initial_factores = {f"factor_{fv.posicion}": fv.valor for fv in qs}
     return initial_montos, initial_factores
 
-
 def _calc_factores_desde_montos(montos_form, def_map):
     """
-    A partir de los montos (8..37) calcula factores proporcionales a total (8..19).
-    Devuelve: (factores_dict, total_base, suma_8_19)
+    Calcula factores proporcionales: factor_pos = monto_pos / suma(8..19)
+    Retorna: (factores_dict, total_base_8_19, suma_factores_8_19)
     """
     total = montos_form.total_8_19()
     factores = {}
     suma_8_19 = Decimal("0")
 
-    # Evita división por cero más adelante
     for pos in range(POS_MIN, POS_MAX + 1):
         monto = montos_form.cleaned_data.get(f"monto_{pos}") or Decimal("0")
         factor = _round8(monto / total) if total > 0 else Decimal("0")
@@ -89,11 +91,10 @@ def _calc_factores_desde_montos(montos_form, def_map):
 
     return factores, total, suma_8_19
 
-
 def _collect_factores_desde_form(factores_form, def_map):
     """
-    Recolecta factores manuales (8..37) desde el form.
-    Devuelve: (factores_dict, suma_8_19)
+    Lee factores manuales del form y calcula suma_8_19.
+    Retorna: (factores_dict, suma_factores_8_19)
     """
     factores = {}
     suma_8_19 = Decimal("0")
@@ -109,20 +110,16 @@ def _collect_factores_desde_form(factores_form, def_map):
 
 
 # =============================================================================
-# DASHBOARD / HOME
+# DASHBOARD / AUDITORÍA 
 # =============================================================================
 @login_required(login_url="login")
 def dashboard(request):
-    """
-    Dashboard solo para administradores. Otros roles van al mantenedor.
-    """
+    """Panel de admin con métricas simples; no admin → redirige a main."""
     user = request.user
     if user.is_superuser or _in_group(user, "Administrador"):
-         # Métricas básicas
         total_calificaciones = TblCalificacion.objects.count()
         ultimas = TblCalificacion.objects.order_by("-fecha_creacion")[:5]
 
-        # Métricas de usuarios (para tarjetas)
         usuarios_total = User.objects.count()
         try:
             g_admin = Group.objects.get(name="Administrador")
@@ -141,7 +138,7 @@ def dashboard(request):
             "ultimas_calificaciones": ultimas,
             "usuarios_total": usuarios_total,
             "usuarios_por_grupo": usuarios_por_grupo,
-            "es_admin": True,  # flag para template
+            "es_admin": True,
         }
         return render(request, "dashboards/admin.html", context)
     return redirect("main")
@@ -149,30 +146,31 @@ def dashboard(request):
 @login_required(login_url="login")
 def auditoria_list(request):
     """
-    Placeholder de Auditoría (visible solo para Admin/superusuario).
-    Cuando tengas el modelo de auditoría, cámbialo por un ListView real.
+    Placeholder de Auditoría: restringido a admin/superuser.
+    (Cambia por ListView real cuando exista el modelo.)
     """
     user = request.user
     if not (user.is_superuser or user.groups.filter(name="Administrador").exists()):
         messages.error(request, "No tienes permisos para ver Auditoría.")
         return redirect("main")
 
-    # TODO: Reemplazar con consulta real cuando exista el modelo AuditLog
-    auditorias = []  # lista vacía por ahora
+    auditorias = []  
 
     return render(request, "auditoria/lista_log.html", {
         "auditorias": auditorias,
         "es_admin": True,
     })
 
+
 # =============================================================================
-# AUTENTICACIÓN
+# AUTENTICACIÓN (welcome / login / logout)
 # =============================================================================
 def welcome_view(request):
+    """Página pública de bienvenida."""
     return render(request, "welcome.html")
 
-
 def login_view(request):
+    """Muestra login; si POST con credenciales correctas → autentica y redirige."""
     if request.method == "POST":
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "").strip()
@@ -183,21 +181,24 @@ def login_view(request):
         messages.error(request, "Usuario o contraseña incorrectos.")
     return render(request, "login.html")
 
-
 def logout_view(request):
+    """Cierra sesión y vuelve a welcome."""
     logout(request)
     return redirect("welcome")
 
 
 # =============================================================================
-# VISTA PRINCIPAL - LISTADO Y FILTROS
+# LISTADO PRINCIPAL CON FILTROS (main_view)
 # =============================================================================
 @login_required(login_url="login")
 def main_view(request):
+    """
+    Lista calificaciones con filtros por mercado, tipo_ingreso y ejercicio.
+    Prepara factores en dos formatos para el template (map y array).
+    """
     filtro_mercado = request.GET.get("mercado", "")
     filtro_tipo_ingreso = request.GET.get("tipo_ingreso", "")
     filtro_ejercicio = request.GET.get("ejercicio", "")
-
 
     qs = (
         TblCalificacion.objects
@@ -205,6 +206,7 @@ def main_view(request):
         .prefetch_related("factores")
     )
 
+    # Filtros opcionales
     if filtro_mercado:
         qs = qs.filter(mercado_id=filtro_mercado)
     if filtro_tipo_ingreso:
@@ -217,11 +219,12 @@ def main_view(request):
 
     items = qs.order_by("-fecha_creacion")[:500]
 
-    # Prepara estructuras de factores para la tabla
+    # Arma estructuras de factores para mostrar en tabla 
     for it in items:
         try:
             factor_qs = it.factores.all()
         except Exception:
+            # Compatibilidad si el related_name fuera diferente
             factor_qs = it.tblfactorvalor_set.all()
 
         factores_map = {int(f.posicion): f.valor for f in factor_qs}
@@ -246,15 +249,12 @@ def main_view(request):
 
 
 # =============================================================================
-# CALIFICACIONES - CARGA MANUAL (PASO 1)  **ÚNICO PUNTO DE CREACIÓN**
+# CREACIÓN MANUAL (PASO 1)  **Único punto de creación**
 # =============================================================================
 @login_required(login_url="login")
 @permission_required("core.add_tblcalificacion", raise_exception=True)
 def carga_manual_view(request):
-    """
-    PASO 1: Crear nueva calificación manualmente.
-    (Este es el único punto de creación; otras rutas delegan aquí.)
-    """
+    """Crea una nueva calificación básica y redirige a edición (paso 2)."""
     if request.method == "POST":
         form = CalificacionBasicaForm(request.POST)
         if form.is_valid():
@@ -269,32 +269,31 @@ def carga_manual_view(request):
     mercados = TblMercado.objects.filter(activo=True).order_by("nombre")
     return render(request, "calificaciones/form_inicial.html", {"form": form, "mercados": mercados})
 
-
-# (Compatibilidad) Si en tu proyecto existe la URL a calificacion_create,
-# ahora simplemente delega a carga_manual_view para evitar duplicar lógica.
+# Compatibilidad: si existe una URL antigua, delega acá para no duplicar lógica
 @login_required(login_url="login")
 @permission_required("core.add_tblcalificacion", raise_exception=True)
 def calificacion_create(request):
+    """Alias de creación (reutiliza carga_manual_view)."""
     return carga_manual_view(request)
 
 
 # =============================================================================
-# CALIFICACIONES - EDICIÓN (PASO 2)
+# EDICIÓN (PASO 2) — Montos / Factores
 # =============================================================================
 @login_required(login_url="login")
 @permission_required("core.change_tblcalificacion", raise_exception=True)
 def calificacion_edit(request, pk: int):
     """
-    PASO 2: Edición de montos y factores (modo montos o manual).
+    Edita una calificación:
+      - Modo "montos": calcula factores desde montos 8..19
+      - Modo "factores": guarda factores manuales (valida suma 8..19 <= 1.0)
     """
     calif = get_object_or_404(TblCalificacion, pk=pk)
     def_map = _build_def_map()
     initial_montos, initial_factores = _initial_data(calif)
     modo_ingreso = request.POST.get("modo_ingreso", request.GET.get("modo_ingreso", "montos"))
 
-    # -------------------------------------------------------------------------
-    # POST
-    # -------------------------------------------------------------------------
+    # --------------------------- POST (acciones) ---------------------------
     if request.method == "POST":
         action = request.POST.get("action")
 
@@ -310,7 +309,7 @@ def calificacion_edit(request, pk: int):
             messages.info(request, "Edición cancelada. No se guardaron cambios.")
             return redirect("main")
 
-        # ----------------------------- MODO MONTOS -----------------------------
+        # --------- MODO: MONTOS (calcula factores) ---------
         if modo_ingreso == "montos":
             montos_form = MontosForm(request.POST, factor_defs=def_map)
             factores_form = FactoresForm(initial=initial_factores, factor_defs=def_map)
@@ -318,57 +317,42 @@ def calificacion_edit(request, pk: int):
             if montos_form.is_valid():
                 factores, total, suma_8_19 = _calc_factores_desde_montos(montos_form, def_map)
 
-                # Validación base: al menos un monto > 0
+                # Validaciones básicas
                 if total <= 0:
-                    messages.error(request, "❌ Debes ingresar al menos un monto mayor a 0 en las posiciones 8-19.")
+                    messages.error(request, "❌ Debes ingresar al menos un monto mayor a 0 en 8-19.")
                     return render(request, "calificaciones/form_factores.html", {
-                        "calif": calif,
-                        "montos_form": montos_form,
-                        "factores_form": factores_form,
-                        "def_map": def_map,
-                        "modo_ingreso": modo_ingreso,
+                        "calif": calif, "montos_form": montos_form, "factores_form": factores_form,
+                        "def_map": def_map, "modo_ingreso": modo_ingreso,
                     })
 
-                # Límite de suma
                 if suma_8_19 > FACTOR_MAX_SUM:
                     messages.error(request, f"❌ La suma de factores 8-19 = {suma_8_19} supera {FACTOR_MAX_SUM}.")
                     return render(request, "calificaciones/form_factores.html", {
-                        "calif": calif,
-                        "montos_form": montos_form,
-                        "factores_form": factores_form,
-                        "factores": factores,
-                        "total": total,
-                        "suma_factores_8_19": suma_8_19,
-                        "suma_valida": False,
-                        "def_map": def_map,
-                        "modo_ingreso": modo_ingreso,
+                        "calif": calif, "montos_form": montos_form, "factores_form": factores_form,
+                        "factores": factores, "total": total,
+                        "suma_factores_8_19": suma_8_19, "suma_valida": False,
+                        "def_map": def_map, "modo_ingreso": modo_ingreso,
                     })
 
-                # Acción: calcular
+                # Acción: solo calcular (mostrar vista previa)
                 if action == "calcular":
                     messages.info(request, "✅ Cálculo realizado. Revisa y pulsa Guardar para persistir.")
                     return render(request, "calificaciones/form_factores.html", {
-                        "calif": calif,
-                        "montos_form": montos_form,
-                        "factores_form": factores_form,
-                        "factores": factores,
-                        "total": total,
-                        "suma_factores_8_19": suma_8_19,
-                        "suma_valida": True,
-                        "def_map": def_map,
-                        "modo_ingreso": modo_ingreso,
+                        "calif": calif, "montos_form": montos_form, "factores_form": factores_form,
+                        "factores": factores, "total": total,
+                        "suma_factores_8_19": suma_8_19, "suma_valida": True,
+                        "def_map": def_map, "modo_ingreso": modo_ingreso,
                     })
 
-                # Acción: guardar
+                # Acción: guardar (persistir factores calculados)
                 if action == "guardar":
                     for pos, row in factores.items():
                         TblFactorValor.objects.update_or_create(
-                            calificacion=calif,
-                            posicion=pos,
+                            calificacion=calif, posicion=pos,
                             defaults={
                                 "monto_base": row["monto"],
                                 "valor": row["factor"],
-                                "factor_def": def_map.get(pos),  
+                                "factor_def": def_map.get(pos),
                             },
                         )
                     calif.usuario = request.user
@@ -376,17 +360,14 @@ def calificacion_edit(request, pk: int):
                     messages.success(request, "✅ Calificación guardada correctamente.")
                     return redirect("main")
 
-            # Errores de form
+            # Si el form no es válido o hubo errores, vuelve al formulario
             return render(request, "calificaciones/form_factores.html", {
-                "calif": calif,
-                "montos_form": montos_form,
-                "factores_form": factores_form,
-                "def_map": def_map,
-                "modo_ingreso": modo_ingreso,
+                "calif": calif, "montos_form": montos_form, "factores_form": factores_form,
+                "def_map": def_map, "modo_ingreso": modo_ingreso,
             })
 
-        # --------------------------- MODO FACTORES -----------------------------
-        else:  # modo_ingreso == "factores"
+        # --------- MODO: FACTORES (manual) ---------
+        else:
             montos_form = MontosForm(initial=initial_montos, factor_defs=def_map)
             factores_form = FactoresForm(request.POST, factor_defs=def_map)
 
@@ -394,46 +375,35 @@ def calificacion_edit(request, pk: int):
                 factores, suma_8_19 = _collect_factores_desde_form(factores_form, def_map)
                 suma_valida = (suma_8_19 <= FACTOR_MAX_SUM)
 
-                # Acción: validar
+                # Acción: validar (no guarda)
                 if action == "validar":
                     if suma_valida:
                         messages.success(request, f"✅ Validación exitosa. Suma = {suma_8_19}. Pulsa Guardar para persistir.")
                     else:
                         messages.error(request, f"❌ La suma de factores 8-19 = {suma_8_19} supera {FACTOR_MAX_SUM}.")
                     return render(request, "calificaciones/form_factores.html", {
-                        "calif": calif,
-                        "montos_form": montos_form,
-                        "factores_form": factores_form,
-                        "factores": factores,
-                        "suma_factores_8_19": suma_8_19,
-                        "suma_valida": suma_valida,
-                        "def_map": def_map,
-                        "modo_ingreso": modo_ingreso,
+                        "calif": calif, "montos_form": montos_form, "factores_form": factores_form,
+                        "factores": factores, "suma_factores_8_19": suma_8_19,
+                        "suma_valida": suma_valida, "def_map": def_map, "modo_ingreso": modo_ingreso,
                     })
 
-                # Acción: guardar
+                # Acción: guardar (persiste si pasa validación)
                 if action == "guardar":
                     if not suma_valida:
                         messages.error(request, "❌ No se puede guardar. La suma de factores 8-19 excede 1.0")
                         return render(request, "calificaciones/form_factores.html", {
-                            "calif": calif,
-                            "montos_form": montos_form,
-                            "factores_form": factores_form,
-                            "factores": factores,
-                            "suma_factores_8_19": suma_8_19,
-                            "suma_valida": suma_valida,
-                            "def_map": def_map,
-                            "modo_ingreso": modo_ingreso,
+                            "calif": calif, "montos_form": montos_form, "factores_form": factores_form,
+                            "factores": factores, "suma_factores_8_19": suma_8_19,
+                            "suma_valida": suma_valida, "def_map": def_map, "modo_ingreso": modo_ingreso,
                         })
 
                     for pos, row in factores.items():
                         TblFactorValor.objects.update_or_create(
-                            calificacion=calif,
-                            posicion=pos,
+                            calificacion=calif, posicion=pos,
                             defaults={
                                 "monto_base": None,
                                 "valor": row["factor"],
-                                "factor_def": def_map.get(pos),  # ✅ agregado
+                                "factor_def": def_map.get(pos),  # enlaza al catálogo si existe
                             },
                         )
                     calif.usuario = request.user
@@ -441,34 +411,13 @@ def calificacion_edit(request, pk: int):
                     messages.success(request, "✅ Factores guardados manualmente.")
                     return redirect("main")
 
-            # Errores de form
+            # Si el form falla, recarga con mensajes
             return render(request, "calificaciones/form_factores.html", {
-                "calif": calif,
-                "montos_form": montos_form,
-                "factores_form": factores_form,
-                "def_map": def_map,
-                "modo_ingreso": modo_ingreso,
+                "calif": calif, "montos_form": montos_form, "factores_form": factores_form,
+                "def_map": def_map, "modo_ingreso": modo_ingreso,
             })
 
-    # -------------------------------------------------------------------------
-    # GET (carga inicial)
-    # -------------------------------------------------------------------------
-    montos_form = MontosForm(initial=initial_montos, factor_defs=def_map)
-    factores_form = FactoresForm(initial=initial_factores, factor_defs=def_map)
-
-    if not calif.factores.exists():
-        messages.warning(request, "⚠️ Calificación incompleta. Debes ingresar montos o factores.")
-
-    return render(request, "calificaciones/form_factores.html", {
-        "calif": calif,
-        "montos_form": montos_form,
-        "factores_form": factores_form,
-        "def_map": def_map,
-        "modo_ingreso": modo_ingreso,
-    })
-    # -------------------------------------------------------------------------
-    # GET (carga inicial)
-    # -------------------------------------------------------------------------
+    # --------------------------- GET (carga inicial) ---------------------------
     montos_form = MontosForm(initial=initial_montos, factor_defs=def_map)
     factores_form = FactoresForm(initial=initial_factores, factor_defs=def_map)
 
@@ -485,18 +434,15 @@ def calificacion_edit(request, pk: int):
 
 
 # =============================================================================
-# CARGA MASIVA (PENDIENTE)
+# ELIMINACIÓN MÚLTIPLE
 # =============================================================================
-
-
-# =============================================================================
-# ELIMINACIONES
-# =============================================================================
-
-
 @login_required(login_url="login")
 @permission_required("core.delete_tblcalificacion", raise_exception=True)
 def calificacion_delete(request):
+    """
+    Elimina múltiples calificaciones seleccionadas en el listado (POST).
+    Si no hay IDs o ninguna coincide → muestra error.
+    """
     if request.method == "POST":
         ids = request.POST.getlist("ids[]")
         if not ids:
@@ -518,19 +464,19 @@ def calificacion_delete(request):
         )
         return redirect("main")
 
+    # Cualquier otra cosa: vuelve al listado
     return redirect("main")
 
 
 # =============================================================================
-#  Detalle de califiaciones
+# DETALLE DE CALIFICACIÓN 
 # =============================================================================
-
 @login_required(login_url="login")
 def calificacion_detalles(request, pk: int):
     """
-    Detalle de calificación que muestra el nombre del factor.
-    - Toma el nombre desde fv.factor_def.nombre cuando existe
-    - Si no, usa el catálogo TblFactorDef por posición (fallback)
+    Muestra detalle de una calificación:
+    - Nombre del factor desde factor_def.nombre si existe,
+      si no, usa catálogo TblFactorDef por posición (fallback).
     """
     calificacion = (
         TblCalificacion.objects
@@ -538,7 +484,7 @@ def calificacion_detalles(request, pk: int):
         .get(pk=pk)
     )
 
-    # Factores 8..37 con su definición (si está enlazada)
+    # Factores 8..37 con su definición si está enlazada
     factores_qs = (
         calificacion.factores
         .filter(posicion__gte=8, posicion__lte=37)
@@ -546,13 +492,13 @@ def calificacion_detalles(request, pk: int):
         .order_by("posicion")
     )
 
-    # Catálogo por posición para fallback
+    # Catálogo por posición (fallback para nombres)
     def_map = {
         d.posicion: d.nombre
         for d in TblFactorDef.objects.filter(posicion__gte=8, posicion__lte=37, activo=True)
     }
 
-    # Normalizar filas para el template
+    # Normaliza filas para el template
     factores_rows = []
     for fv in factores_qs:
         nombre = fv.factor_def.nombre if fv.factor_def else def_map.get(fv.posicion, f"Factor {fv.posicion}")
@@ -564,6 +510,6 @@ def calificacion_detalles(request, pk: int):
         })
 
     return render(request, "calificaciones/detalles.html", {
-        "calificacion": calificacion,   # usa 'calificacion' en el template
-        "factores_rows": factores_rows, # lista lista para iterar
+        "calificacion": calificacion,    # objeto para cabecera
+        "factores_rows": factores_rows,  # lista iterables 8..37
     })
