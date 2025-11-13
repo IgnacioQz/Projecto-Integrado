@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load tz %}
 
 {% block main %}
 <style>
@@ -65,9 +65,7 @@
         <select name="origen" class="form-select form-select-sm">
           <option value="">Todos</option>
           <option value="manual" {% if origen == 'manual' %}selected{% endif %}>Carga manual (Corredor)</option>
-          <option value="masiva" {% if origen == 'masiva' %}selected{% endif %} disabled title="Pronto">
-            Carga masiva (Archivo)
-          </option>
+          <option value="masiva" {% if origen == 'masiva' %}selected{% endif %}>Carga masiva (Archivo)</option>
         </select>
       </div>
 
