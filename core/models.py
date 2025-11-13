@@ -1,4 +1,13 @@
 # =============================================================================
+# models.py — Modelos del Mantenedor de Calificaciones
+# =============================================================================
+# Contiene:
+# 1) Catálogos base (Mercado, Instrumento, TipoIngreso, FactorDef)
+# 2) Evidencia de carga (ArchivoFuente)
+# 3) Modelos de negocio (Calificacion, FactorValor)
+# -----------------------------------------------------------------------------
+
+# =============================================================================
 # IMPORTS
 # =============================================================================
 from django.db import models
@@ -11,7 +20,7 @@ from django.contrib.auth.models import User
 # CATÁLOGOS BASE
 # =============================================================================
 class TblMercado(models.Model):
-    """Catálogo de mercados (ej.: ACCIONES, CFI, FONDOS MUTUOS, etc.)"""
+    """Catálogo de mercados (ej.: ACCIONES, CFI, FONDOS MUTUOS, etc.)."""
 
     mercado_id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=60, unique=True, verbose_name="Nombre del Mercado")
@@ -24,7 +33,7 @@ class TblMercado(models.Model):
         verbose_name_plural = "Mercados"
         ordering = ["nombre"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.nombre
 
 
@@ -40,7 +49,7 @@ class TblInstrumento(models.Model):
         verbose_name = "Instrumento"
         verbose_name_plural = "Instrumentos"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.nombre} ({self.tipo_instrumento})"
 
 
@@ -51,7 +60,7 @@ class TblTipoIngreso(models.Model):
     nombre_tipo_ingreso = models.CharField(max_length=50, verbose_name="Nombre del Tipo de Ingreso")
     prioridad = models.IntegerField(
         verbose_name="Prioridad",
-        help_text="Regla de prevalencia (p.ej. Corredor > Bolsa)"
+        help_text="Regla de prevalencia (p.ej. Corredor > Bolsa)",
     )
 
     class Meta:
@@ -60,7 +69,7 @@ class TblTipoIngreso(models.Model):
         verbose_name_plural = "Tipos de Ingreso"
         ordering = ["prioridad"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.nombre_tipo_ingreso} (Prioridad {self.prioridad})"
 
 
@@ -77,7 +86,7 @@ class TblFactorDef(models.Model):
         db_table = "TBL_FACTOR_DEF"
         ordering = ["posicion"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.posicion} - {self.nombre}"
 
 
@@ -85,7 +94,7 @@ class TblFactorDef(models.Model):
 # MODELOS DE CARGA Y EVIDENCIA
 # =============================================================================
 class TblArchivoFuente(models.Model):
-    """Registro de archivos subidos para carga masiva."""
+    """Registro de archivos subidos para carga masiva (trazabilidad/evidencia)."""
 
     archivo_fuente_id = models.AutoField(primary_key=True)
     nombre_archivo = models.CharField(max_length=255, verbose_name="Nombre del Archivo")
@@ -104,7 +113,7 @@ class TblArchivoFuente(models.Model):
         verbose_name_plural = "Archivos Fuente"
         ordering = ["-fecha_subida"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.nombre_archivo
 
 
@@ -112,7 +121,7 @@ class TblArchivoFuente(models.Model):
 # MODELOS PRINCIPALES DE NEGOCIO
 # =============================================================================
 class TblCalificacion(models.Model):
-    """Entidad principal: Calificación tributaria."""
+    """Entidad principal: Calificación tributaria (cabecera)."""
 
     calificacion_id = models.AutoField(primary_key=True)
 
@@ -197,7 +206,7 @@ class TblCalificacion(models.Model):
         if self.secuencia_evento and self.secuencia_evento <= 10000:
             raise ValidationError({"secuencia_evento": "La secuencia debe ser > 10000"})
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Cal #{self.calificacion_id} {self.mercado} {self.instrumento_text} ({self.ejercicio})"
 
 
@@ -239,5 +248,6 @@ class TblFactorValor(models.Model):
         if self.valor is not None and not (0 <= self.valor <= 1):
             raise ValidationError({"valor": "El factor debe estar entre 0 y 1"})
 
-    def __str__(self):
+    def __str__(self) -> str:
+        # Nota: Django crea el atributo FK_id (<fk>_id). Aquí es válido usar calificacion_id.
         return f"C{self.calificacion_id}-F{self.posicion}={self.valor}"
