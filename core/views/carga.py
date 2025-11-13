@@ -16,7 +16,8 @@ from django.shortcuts import render, redirect
 from core.models import (
     TblCalificacion, TblFactorValor, TblArchivoFuente, TblTipoIngreso
 )
-from core.views import _round8, _build_def_map, POS_MIN, POS_BASE_MAX, POS_MAX
+
+from core.views.mainv import _round8, _build_def_map, POS_MIN, POS_BASE_MAX, POS_MAX
 from core.ingestion_helpers import (
     to_int, to_dec, is_monto_col, is_factor_col,
     find_mercado, tipo_ingreso_by_id,

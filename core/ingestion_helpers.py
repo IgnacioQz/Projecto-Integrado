@@ -12,7 +12,7 @@ from django.utils import timezone
 from core.models import TblCalificacion, TblTipoIngreso, TblMercado, TblFactorDef
 
 # Reutiliza las constantes del dominio desde views.py
-from core.views import POS_MIN, POS_BASE_MAX, POS_MAX
+from core.views.mainv import POS_MIN, POS_BASE_MAX, POS_MAX
 
 # -----------------------------
 # utils

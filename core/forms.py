@@ -1,39 +1,61 @@
 # =============================================================================
+# forms.py — Formularios del Mantenedor de Calificaciones
+# =============================================================================
+# Contiene:
+# 1) Config global de widgets/clases
+# 2) CalificacionBasicaForm (paso 1)
+# 3) MontosForm (paso 2A - montos 8..37)
+# 4) FactoresForm (paso 2B - factores 8..37)
+# -----------------------------------------------------------------------------
+
+# =============================================================================
 # IMPORTS
 # =============================================================================
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, ROUND_HALF_UP
 from django import forms
-from .models import TblCalificacion, TblMercado
 from django.utils import timezone
 
+from .models import TblCalificacion, TblMercado
 
 
 # =============================================================================
-# CONFIGURACIÓN GLOBAL DE FORMULARIOS
+# CONSTANTES (evitan “números mágicos”)
 # =============================================================================
+POS_MIN = 8
+POS_BASE_MAX = 19     # sumatoria base (8..19)
+POS_MAX = 37
+
 FORM_CONTROL_CLASS = "form-control-modal"
 FORM_SELECT_CLASS = "form-select-modal"
 DECIMAL_WIDGET_ATTRS = {
     "step": "0.01",
     "class": f"{FORM_CONTROL_CLASS} form-control-sm",
-    "placeholder": "0.00"
+    "placeholder": "0.00",
 }
+
+
+# =============================================================================
+# HELPERS ( utilidades para campos/validaciones)
+# =============================================================================
+def _q8(x: Decimal) -> Decimal:
+    """Redondea a 8 decimales con HALF_UP."""
+    return (x or Decimal("0")).quantize(Decimal("0.00000000"), rounding=ROUND_HALF_UP)
 
 
 # =============================================================================
 # FORMULARIO PASO 1: DATOS BÁSICOS DE CALIFICACIÓN
 # =============================================================================
 class CalificacionBasicaForm(forms.ModelForm):
-    """Formulario para crear/editar datos básicos de una calificación."""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        hoy = timezone.localdate().isoformat()  # 'YYYY-MM-DD'
-        self.fields["fecha_pago_dividendo"].widget.attrs["max"] = hoy
+    """
+    Form para crear/editar los datos base de la calificación.
+    - Ajusta el 'max' de fecha a hoy.
+    - Valida campos numéricos y rangos simples.
+    """
 
-    # Campo mercado personalizado
+    # Campo mercado personalizado (solo activos)
     mercado = forms.ModelChoiceField(
-        queryset=TblMercado.objects.filter(activo=True).order_by('nombre'),
-        widget=forms.Select(attrs={'class': FORM_CONTROL_CLASS}),
+        queryset=TblMercado.objects.filter(activo=True).order_by("nombre"),
+        widget=forms.Select(attrs={"class": FORM_SELECT_CLASS}),
         empty_label="Seleccione un mercado",
     )
 
@@ -75,98 +97,92 @@ class CalificacionBasicaForm(forms.ModelForm):
                 "type": "date",
                 "min": "1980-01-01",
             }),
-            "secuencia_evento": forms.NumberInput(attrs={
-                "class": FORM_CONTROL_CLASS,
-            }),
-            "dividendo": forms.NumberInput(attrs={
-                "class": FORM_CONTROL_CLASS,
-                "step": "0.01"
-            }),
-            "valor_historico": forms.NumberInput(attrs={
-                "class": FORM_CONTROL_CLASS,
-                "step": "0.01"
-            }),
-            "factor_actualizacion": forms.NumberInput(attrs={
-                "class": FORM_CONTROL_CLASS,
-                "step": "0.0001"
-            }),
-            "ejercicio": forms.NumberInput(attrs={
-                "class": FORM_CONTROL_CLASS,
-                "placeholder": "Año"
-            }),
+            "secuencia_evento": forms.NumberInput(attrs={"class": FORM_CONTROL_CLASS}),
+            "dividendo": forms.NumberInput(attrs={"class": FORM_CONTROL_CLASS, "step": "0.01"}),
+            "valor_historico": forms.NumberInput(attrs={"class": FORM_CONTROL_CLASS, "step": "0.01"}),
+            "factor_actualizacion": forms.NumberInput(attrs={"class": FORM_CONTROL_CLASS, "step": "0.0001"}),
+            "ejercicio": forms.NumberInput(attrs={"class": FORM_CONTROL_CLASS, "placeholder": "Año"}),
             "isfut": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "tipo_ingreso": forms.Select(attrs={"class": FORM_SELECT_CLASS}),
         }
+
+    def __init__(self, *args, **kwargs):
+        """Configura el tope de fecha a 'hoy'."""
+        super().__init__(*args, **kwargs)
+        hoy = timezone.localdate().isoformat()  # 'YYYY-MM-DD'
+        self.fields["fecha_pago_dividendo"].widget.attrs["max"] = hoy
+
+    # --- Validaciones simples y legibles ---
     def clean_instrumento_text(self):
-        instrumento = self.cleaned_data.get("instrumento_text", "").strip()
-        if not instrumento:
+        inst = (self.cleaned_data.get("instrumento_text") or "").strip()
+        if not inst:
             raise forms.ValidationError("El campo 'Instrumento' no puede estar vacío.")
-        return instrumento
-    
+        return inst
+
     def clean_fecha_pago_dividendo(self):
         fecha = self.cleaned_data.get("fecha_pago_dividendo")
         if not fecha:
             return fecha
-        hoy = timezone.localdate()  
-        if fecha > hoy:
+        if fecha > timezone.localdate():
             raise forms.ValidationError("La fecha de pago no puede ser futura.")
         return fecha
-    
+
     def clean_secuencia_evento(self):
-        secuencia = self.cleaned_data.get("secuencia_evento")
-        if secuencia is not None and secuencia < 0:
+        v = self.cleaned_data.get("secuencia_evento")
+        if v is not None and v < 0:
             raise forms.ValidationError("La secuencia del evento no puede ser negativa.")
-        return secuencia
-    
+        return v
+
     def clean_dividendo(self):
-        dividendo = self.cleaned_data.get("dividendo")
-        if dividendo is not None and dividendo < 0:
+        v = self.cleaned_data.get("dividendo")
+        if v is not None and v < 0:
             raise forms.ValidationError("El dividendo no puede ser negativo.")
-        return dividendo
-    
+        return v
+
     def clean_valor_historico(self):
-        valor = self.cleaned_data.get("valor_historico")
-        if valor is not None and valor < 0:
+        v = self.cleaned_data.get("valor_historico")
+        if v is not None and v < 0:
             raise forms.ValidationError("El valor histórico no puede ser negativo.")
-        return valor
-    
+        return v
+
     def clean_factor_actualizacion(self):
-        factor = self.cleaned_data.get("factor_actualizacion")
-        if factor is not None and factor <= 0:
+        v = self.cleaned_data.get("factor_actualizacion")
+        if v is not None and v <= 0:
             raise forms.ValidationError("El factor de actualización debe ser mayor a cero.")
-        return factor
-    
+        return v
+
     def clean_ejercicio(self):
-        ejercicio = self.cleaned_data.get("ejercicio")
-        if ejercicio is not None:
+        v = self.cleaned_data.get("ejercicio")
+        if v is not None:
             año_actual = timezone.localdate().year
-            if ejercicio < 1980 or ejercicio > año_actual:
+            if v < 1980 or v > año_actual:
                 raise forms.ValidationError(f"El ejercicio debe estar entre 1980 y {año_actual}.")
-        return ejercicio
-    
+        return v
+
     def clean_descripcion(self):
-        descripcion = self.cleaned_data.get("descripcion", "").strip()
-        if len(descripcion) > 300:
+        v = (self.cleaned_data.get("descripcion") or "").strip()
+        if len(v) > 300:
             raise forms.ValidationError("La descripción no puede exceder los 300 caracteres.")
-        return descripcion
+        return v
+
+
 # =============================================================================
-# FORMULARIO PASO 2-A: INGRESO DE MONTOS (AUTOMÁTICO)
+# FORMULARIO PASO 2-A: INGRESO DE MONTOS (8..37)
 # =============================================================================
 class MontosForm(forms.Form):
     """
-    Formulario para ingresar montos en posiciones 8-37.
-
-    Args:
-        factor_defs (dict): Mapeo {posicion: TblFactorDef} para labels dinámicos.
+    Ingreso de montos para posiciones 8..37.
+    - Crea dinámicamente campos Decimal (2 decimales).
+    - Usa labels y help_text desde el catálogo (factor_defs).
     """
 
     def __init__(self, *args, factor_defs=None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Crear campos dinámicos 8–37
-        for pos in range(8, 38):
+        for pos in range(POS_MIN, POS_MAX + 1):
             field_name = f"monto_{pos}"
 
+            # Campo decimal simple (2 decimales)
             self.fields[field_name] = forms.DecimalField(
                 required=False,
                 min_value=Decimal("0"),
@@ -175,51 +191,51 @@ class MontosForm(forms.Form):
                 widget=forms.NumberInput(attrs=DECIMAL_WIDGET_ATTRS),
             )
 
-            # Label y ayuda desde el catálogo
-            etiqueta = f"Posición {pos}"
+            # Etiqueta/ayuda desde catálogo (si existe definición)
+            label = f"Posición {pos}"
             if factor_defs and pos in factor_defs:
-                factor = factor_defs[pos]
-                etiqueta = f"{pos} — {factor.nombre}"
-                if factor.descripcion:
-                    self.fields[field_name].help_text = factor.descripcion
+                fdef = factor_defs[pos]
+                label = f"{pos} — {fdef.nombre}"
+                if getattr(fdef, "descripcion", None):
+                    self.fields[field_name].help_text = fdef.descripcion
 
-            self.fields[field_name].label = etiqueta
+            self.fields[field_name].label = label
 
     def total_8_19(self) -> Decimal:
-        """Calcula la suma de los montos en posiciones 8-19."""
+        """Suma los montos en posiciones 8..19 (base)."""
         return sum(
-            (self.cleaned_data.get(f"monto_{pos}") or Decimal("0") for pos in range(8, 20)),
-            Decimal("0")
+            (self.cleaned_data.get(f"monto_{pos}") or Decimal("0") for pos in range(POS_MIN, POS_BASE_MAX + 1)),
+            Decimal("0"),
         )
 
 
 # =============================================================================
-# FORMULARIO PASO 2-B: INGRESO DE FACTORES (MANUAL)
+# FORMULARIO PASO 2-B: INGRESO DE FACTORES (8..37)
 # =============================================================================
 class FactoresForm(forms.Form):
     """
-    Formulario para ingreso MANUAL de factores (posiciones 8-37).
-    - Cada campo acepta hasta 8 decimales.
-    - Suma 8..19 <= 1.0
-    - Al menos un factor > 0 entre 8..19.
+    Ingreso MANUAL de factores para posiciones 8..37.
+    Reglas:
+      - Cada campo: hasta 8 decimales (0..1).
+      - Suma 8..19 <= 1.0 y al menos un factor > 0 en 8..19.
     """
 
     def __init__(self, *args, factor_defs=None, **kwargs):
         super().__init__(*args, **kwargs)
         if not factor_defs:
-            return
+            return  # sin catálogo no generamos campos
 
-        # Generar dinámicamente los campos 8–37
-        for pos in range(8, 38):
+        for pos in range(POS_MIN, POS_MAX + 1):
             if pos not in factor_defs:
                 continue
+
             fdef = factor_defs[pos]
             field_name = f"factor_{pos}"
 
             self.fields[field_name] = forms.DecimalField(
                 label=f"{pos:02d} — {fdef.nombre}",
                 required=False,
-                max_digits=9,  # 1 entero + 8 decimales
+                max_digits=9,            # 1 entero + 8 decimales
                 decimal_places=8,
                 initial=Decimal("0.00000000"),
                 widget=forms.NumberInput(attrs={
@@ -232,39 +248,44 @@ class FactoresForm(forms.Form):
                 help_text=getattr(fdef, "descripcion", None),
             )
 
-            # Función de limpieza individual por campo
+            # Validador por-campo (negativos y > 1 no permitidos, y redondeo a 8 decimales)
             def make_clean(fname):
                 def _clean(self):
-                    valor = self.cleaned_data.get(fname)
-                    if valor is None:
+                    v = self.cleaned_data.get(fname)
+                    if v is None:
                         return Decimal("0.00000000")
-                    if valor < 0:
+                    if v < 0:
                         raise forms.ValidationError("El factor no puede ser negativo.")
-                    if valor > 1:
+                    if v > 1:
                         raise forms.ValidationError("El factor no puede ser mayor a 1.")
-                    return valor.quantize(Decimal("0.00000000"), rounding="ROUND_HALF_UP")
+                    return _q8(v)
                 return _clean
 
             setattr(self, f"clean_{field_name}", make_clean(field_name).__get__(self, type(self)))
 
+    # --- Validación transversal del formulario ---
     def clean(self):
-        """Validaciones generales de consistencia de factores."""
+        """
+        Reglas globales:
+          - suma(8..19) <= 1.0
+          - al menos un factor > 0 en 8..19
+        """
         cleaned = super().clean()
 
         suma_8_19 = Decimal("0")
-        tiene_valor = False
+        tiene_alguno = False
 
-        for pos in range(8, 20):
+        for pos in range(POS_MIN, POS_BASE_MAX + 1):
             v = cleaned.get(f"factor_{pos}") or Decimal("0")
             suma_8_19 += v
             if v > 0:
-                tiene_valor = True
+                tiene_alguno = True
 
         if suma_8_19 > Decimal("1.00000000"):
             raise forms.ValidationError(
-                f"La suma de factores 8-19 ({suma_8_19}) excede 1.00000000. Ajusta los valores."
+                f"La suma de factores 8-19 ({_q8(suma_8_19)}) excede 1.00000000. Ajusta los valores."
             )
-        if not tiene_valor:
+        if not tiene_alguno:
             raise forms.ValidationError(
                 "Debes ingresar al menos un factor mayor a 0 en las posiciones 8-19."
             )

@@ -15,7 +15,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils.timezone import localtime
 
-from core.models import AuditEventDB
+from core.models_audit_db import AuditEventDB
 
 # ============================================================================
 # CONFIGURACIÓN (IDs de tipo de ingreso por origen)
