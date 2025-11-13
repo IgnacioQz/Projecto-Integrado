@@ -1,9 +1,7 @@
-# core/urls.py
 from django.urls import path
 from . import views
 from .views_audit import auditoria_list, audit_ping 
-from . import views_ingestion_csv as csvv
-from . import views_ingestion_pdf as pdfv
+from . import views_carga as carga_views
 
 urlpatterns = [
     # ==========================================================================
@@ -36,8 +34,8 @@ urlpatterns = [
     # ==========================================================================
     # Carga masiva 
     # ==========================================================================
-    path("carga-masiva/", views.carga_masiva_view, name="carga_masiva"),
-
+    path("calificaciones/carga-masiva/", carga_views.carga_archivo, name="carga_archivo"),
+    path("calificaciones/carga-masiva/confirmar/", carga_views.carga_confirmar, name="carga_archivo_confirmar"),
     # ==========================================================================
     # Auditoría (placeholder)
     # ==========================================================================
@@ -49,11 +47,8 @@ urlpatterns = [
     # vista detalles calificacion
     # ==========================================================================
     path("calificaciones/<int:pk>/detalles/", views.calificacion_detalles, name="calificacion_detalles"),
-    path("sandbox/csv/", csvv.csv_upload, name="csv_carga"),
-    path("sandbox/csv/confirmar/", csvv.csv_confirm, name="csv_carga_confirm"),
-
-    path("sandbox/pdf/", pdfv.pdf_upload, name="pdf_carga"),
-    path("sandbox/pdf/confirmar/", pdfv.pdf_confirm, name="pdf_carga_confirm"),
+    # ==========================================================================
+ 
 ]
 
 

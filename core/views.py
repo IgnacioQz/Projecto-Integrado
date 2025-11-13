@@ -487,10 +487,6 @@ def calificacion_edit(request, pk: int):
 # =============================================================================
 # CARGA MASIVA (PENDIENTE)
 # =============================================================================
-@login_required(login_url="login")
-@permission_required("core.add_tblcalificacion", raise_exception=True)
-def carga_masiva_view(request):
-    return render(request, "calificaciones/carga_masiva.html")
 
 
 # =============================================================================

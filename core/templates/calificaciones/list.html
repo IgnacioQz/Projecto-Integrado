@@ -161,7 +161,7 @@
                 {% endif %}
                 {% if perms.core.add_tblcalificacion %}
                     <a href="{% url 'carga_manual' %}" class="btn btn-success">➕ Ingresar</a>
-                    <a href="{% url 'carga_masiva' %}" class="btn btn-secondary">📁 Carga Masiva</a>
+                    <a href="{% url 'carga_archivo' %}" class="btn btn-secondary">📁 Carga Masiva</a>
                 {% endif %}
                 {% if perms.core.change_tblcalificacion %}
                     <button type="button" class="btn btn-primary" id="btn-modificar" disabled>✏️ Modificar</button>
