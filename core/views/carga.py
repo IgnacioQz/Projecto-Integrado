@@ -71,19 +71,21 @@ def carga_archivo(request):
         try:
             # --- CSV ---
             if ext == ".csv":
-                # Usamos TextIOWrapper para asegurar UTF-8 y newline seguro
                 rows, modo = parse_csv(TextIOWrapper(f, encoding="utf-8", newline=""))
                 tipo_archivo = "csv"
+                print(f"DEBUG CSV: {len(rows)} filas procesadas")
 
             # --- PDF (Certificado 70) ---
             else:
-                with pdfplumber.open(f) as pdf:
-                    txt = "\n".join((page.extract_text() or "") for page in pdf.pages)
-                rows, modo = parse_cert70_text(txt)
+                print(f"DEBUG: Procesando PDF: {fname}")
+                print(f"DEBUG: Tamaño archivo: {f.size} bytes")
+                rows, modo = parse_cert70_text(f)
                 tipo_archivo = "pdf"
+                print(f"DEBUG PDF: {len(rows)} filas procesadas, modo: {modo}")
 
             # Debe haber filas válidas
             if not rows:
+                print("DEBUG: No se detectaron filas válidas")
                 messages.warning(request, "No se detectaron filas válidas.")
                 return render(request, "calificaciones/carga_archivo.html")
 
