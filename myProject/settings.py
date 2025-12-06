@@ -73,6 +73,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'myProject.wsgi.application'
 
+#Session settings
+
+SESSION_COOKIE_AGE = 120  # Tiempo de expiración en segundos (30 minutos)
+SESSION_SAVE_EVERY_REQUEST = True  # Reinicia el contador de tiempo en cada solicitud
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Expira la sesión al cerrar el navegador
+
+#Seguridad adicional
+
+SESSION_COOKIE_SECURE = False  # Solo enviar cookies de sesión a través de HTTPS (establecer en True en producción)
+SESSION_COOKIE_HTTPONLY = True  # Evitar acceso a cookies de sesión mediante JavaScript, previniendo ataques XSS
+SESSION_COOKIE_SAMESITE = 'Lax'  # Prevenir ataques CSRF
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
