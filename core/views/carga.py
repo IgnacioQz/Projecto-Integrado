@@ -153,6 +153,13 @@ def carga_confirmar(request):
     modo = request.session.get(SESSION_MODE) or "montos"
     meta = request.session.get(SESSION_META) or {}
 
+    print(f"\nDEBUG CONFIRMAR: Total filas en sesión: {len(rows)}")
+    print(f"DEBUG CONFIRMAR: Modo detectado: {modo}")
+    print(f"DEBUG CONFIRMAR: Meta: {meta}")
+    if rows:
+        print(f"DEBUG CONFIRMAR: Primera fila keys: {list(rows[0].keys())}")
+        print(f"DEBUG CONFIRMAR: Primera fila data: {rows[0]}")
+
     # Debe existir preview en sesión
     if not rows:
         messages.error(request, "No hay vista previa en sesión.")
@@ -181,6 +188,8 @@ def carga_confirmar(request):
     with transaction.atomic():
         for i, r in enumerate(rows, start=1):
             try:
+                print(f"\nDEBUG: Procesando fila {i}")
+                print(f"DEBUG: Keys en fila: {[k for k in r.keys() if 'MONTO' in k or 'FACTOR' in k]}")
                 # ----------------- Encabezado/calificación base -----------------
                 ejercicio   = to_int(r.get("ejercicio"))
                 sec_eve     = to_int(r.get("sec_eve"))
@@ -229,8 +238,9 @@ def carga_confirmar(request):
                     ])
 
                 # ----------------- Persistencia de factores -----------------
+                print(f"DEBUG: Entrando a persistencia - modo={modo}, tipo={meta.get('tipo')}")
                 # CSV + 'montos' -> calcula factores proporcionalmente a total (8..19)
-                if meta.get("tipo") == "csv" and modo == "montos":
+                if modo == "montos":  # Aplica tanto para CSV como para PDF
                     total_base = D("0")
                     montos: dict[int, D] = {}
 
@@ -263,7 +273,7 @@ def carga_confirmar(request):
                             },
                         )
 
-                # CSV (modo 'factors') o PDF -> valida suma 8..19 <= 1 y guarda tal cual
+                # CSV (modo 'factors') o PDF con factores directos -> valida suma 8..19 <= 1 y guarda tal cual
                 else:
                     suma_8_19 = D("0")
                     factores: dict[int, D] = {}
