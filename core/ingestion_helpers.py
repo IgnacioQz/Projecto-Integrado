@@ -136,6 +136,10 @@ def parse_csv(io_text: TextIOWrapper):
 # PDF Cert70 (texto plano) — placeholder mínimo
 # -----------------------------
 
+# Reemplaza TODA la función parse_cert70_text en ingestion_helpers.py
+
+from datetime import datetime
+
 def parse_cert70_text(pdf_file):
     """
     Parsea un PDF Certificado 70 (formato chileno).
@@ -249,6 +253,32 @@ def parse_cert70_text(pdf_file):
                                 
                                 print(f"\nDEBUG: Procesando dividendo {subfila_idx+1}: Fecha={fecha}, Div={div_nro}")
                                 
+                                # Extraer Secuencia Evento (col 4 - Monto Histórico) y Factor Actualización (col 5)
+                                sec_evento = div_nro  # Por defecto usa el div_nro
+                                factor_actualizacion = "1"
+                                
+                                # Col 4 = Secuencia Evento (Monto Histórico)
+                                if len(columnas_split) > 4:
+                                    sec_str = columnas_split[4][subfila_idx].strip()
+                                    if sec_str and sec_str not in ("0", "-", ""):
+                                        try:
+                                            sec_limpio = sec_str.replace(".", "").replace(",", ".")
+                                            sec_evento = sec_limpio
+                                            print(f"  Col 4: Secuencia Evento (Monto Histórico) = {sec_evento}")
+                                        except:
+                                            pass
+                                
+                                # Col 5 = Factor Actualización
+                                if len(columnas_split) > 5:
+                                    fa_str = columnas_split[5][subfila_idx].strip()
+                                    if fa_str and fa_str not in ("0", "-", ""):
+                                        try:
+                                            fa_limpio = fa_str.replace(".", "").replace(",", ".")
+                                            factor_actualizacion = str(Decimal(fa_limpio))
+                                            print(f"  Col 5: Factor Actualización = {factor_actualizacion}")
+                                        except:
+                                            pass
+                                
                                 # Inicializar entrada si no existe
                                 if key not in rows_por_dividendo:
                                     rows_por_dividendo[key] = {
@@ -256,18 +286,20 @@ def parse_cert70_text(pdf_file):
                                         "mercado_cod": "ACC",
                                         "nemo": "CAP",
                                         "fecha_pago": fecha,
-                                        "sec_eve": div_nro,
+                                        "dividendo": div_nro,  # Col 1: Número de dividendo
+                                        "sec_eve": sec_evento,  # Col 4: Monto histórico como secuencia
                                         "descripcion": f"Cert70: {fecha} - Div.{div_nro}",
                                         "tipo_ingreso_id": "2",
+                                        "factor_actualizacion": factor_actualizacion,
                                     }
                                 
-                                # Extraer MONTOS de columnas físicas 5-16 → F8_MONTO a F19_MONTO
-                                # Col 5 del PDF = F8, Col 6 = F9, ..., Col 16 = F19
-                                for col_pdf in range(7, 18):  # Columnas físicas 5-16
+                                # Extraer MONTOS de columnas físicas 7-18 → F8_MONTO a F19_MONTO
+                                # Col 7 del PDF = F8, Col 8 = F9, ..., Col 18 = F19
+                                for col_pdf in range(7, 19):  # Columnas físicas 7-18 (12 columnas)
                                     if col_pdf >= len(columnas_split):
                                         break
                                     
-                                    pos_factor = col_pdf + 1  # col 5→F8, col 6→F9, ..., col 16→F19
+                                    pos_factor = col_pdf + 1  # col 7→F8, col 8→F9, ..., col 18→F19
                                     valor_str = columnas_split[col_pdf][subfila_idx].strip()
                                     
                                     if not valor_str or valor_str in ("0", "-", ""):

@@ -216,6 +216,8 @@ def carga_confirmar(request):
                         "tipo_ingreso": tipo_ingreso,
                         "descripcion": descripcion,
                         "fecha_pago_dividendo": fec_pago,
+                        "dividendo": to_dec(r.get("dividendo")),  # Col 1: número del dividendo
+                        "factor_actualizacion": to_dec(r.get("factor_actualizacion"), D("1")),  # Col 5
                         "usuario": request.user,
                         "archivo_fuente": archivo_fuente,
                     }
