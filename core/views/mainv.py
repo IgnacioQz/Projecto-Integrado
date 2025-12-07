@@ -191,9 +191,16 @@ def logout_view(request):
 # VERIFICACION SESIÓN ACTIVA 
 # =============================================================================
 
-@login_required(login_url="login")
 def check_session(request):
     request.session.modified = False  # No modifica la sesión
+
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'authenticated': False,
+            'message': 'Sesión expirada'
+        }, status=401)
+    
+    request.session.modified = False
     
     return JsonResponse({
         'authenticated': True,

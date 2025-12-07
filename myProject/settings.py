@@ -76,9 +76,9 @@ WSGI_APPLICATION = 'myProject.wsgi.application'
 
 #Session settings
 
-SESSION_COOKIE_AGE = 120  # Tiempo de expiración en segundos (30 minutos)
+SESSION_COOKIE_AGE = 1800  # Tiempo de expiración en segundos (30 minutos)
 SESSION_SAVE_EVERY_REQUEST = True  # Reinicia el contador de tiempo en cada solicitud
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Expira la sesión al cerrar el navegador
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Expira la sesión al cerrar el navegador
 
 #Seguridad adicional
 
