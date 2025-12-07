@@ -61,8 +61,8 @@
             if (config) {
                 const sessionManager = new SessionManager({
                     sessionTimeout: parseInt(config.dataset.timeout) || 1800,
-                    warningTime: 30000,
-                    checkInterval: 10000,
+                    warningTime: 120000,
+                    checkInterval: 60000,
                     checkUrl: config.dataset.checkUrl,
                     loginUrl: config.dataset.loginUrl
                 });
