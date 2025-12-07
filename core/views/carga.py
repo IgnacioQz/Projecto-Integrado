@@ -10,6 +10,7 @@ from decimal import Decimal as D
 import pdfplumber
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.files.storage import default_storage
 from django.db import transaction
 from django.shortcuts import render, redirect
 
@@ -40,6 +41,7 @@ def _clear_upload_session(request) -> None:
     for key in (SESSION_ROWS, SESSION_MODE, SESSION_META):
         request.session.pop(key, None)
 
+
 def _ext(fname: str) -> str:
     """Devuelve extensión en minúsculas, p.ej. '.csv'."""
     return os.path.splitext(fname.lower())[1]
@@ -53,14 +55,15 @@ def _ext(fname: str) -> str:
 def carga_archivo(request):
     """
     Sube un CSV o PDF (Cert70), valida y genera una vista previa.
-    - CSV: detecta si viene por 'montos' o por 'factors' (según columnas).
-    - PDF: extrae texto, parsea y normaliza filas.
-    La importación real sucede en 'carga_confirmar'.
+
+    Flujo nuevo:
+      - Sube el archivo a S3 usando default_storage.
+      - Guarda la URL/ruta en TblArchivoFuente.ruta_almacenamiento.
+      - Usa el archivo del request (upload) para parsear el contenido.
     """
-    # POST con archivo: procesar
     if request.method == "POST" and request.FILES.get("archivo"):
-        f = request.FILES["archivo"]
-        fname = f.name
+        upload = request.FILES["archivo"]  # archivo subido
+        fname = upload.name
         ext = _ext(fname)
 
         # Solo aceptamos CSV o PDF
@@ -68,24 +71,48 @@ def carga_archivo(request):
             messages.error(request, "Sube un archivo .csv o .pdf.")
             return render(request, "calificaciones/carga_archivo.html")
 
+        tipo_archivo = "csv" if ext == ".csv" else "pdf"
+
+        # 1) Subir archivo a S3 mediante default_storage
+        #    Guardamos la ruta/URL en TblArchivoFuente (trazabilidad).
+        #    Nos aseguramos de posicionar el stream al inicio.
+        if hasattr(upload, "seek"):
+            upload.seek(0)
+
+        s3_key = default_storage.save(f"calificaciones/{fname}", upload)
         try:
+            file_url = default_storage.url(s3_key)
+        except Exception:
+            # Si por alguna razón url() falla, guardamos la key tal cual
+            file_url = s3_key
+
+        archivo_fuente = TblArchivoFuente.objects.create(
+            nombre_archivo=fname,
+            ruta_almacenamiento=file_url,
+            usuario=request.user,
+        )
+
+        try:
+            # Volvemos el puntero al inicio para leer el archivo
+            if hasattr(upload, "seek"):
+                upload.seek(0)
+
             # --- CSV ---
             if ext == ".csv":
-                rows, modo = parse_csv(TextIOWrapper(f, encoding="utf-8", newline=""))
-                tipo_archivo = "csv"
-                print(f"DEBUG CSV: {len(rows)} filas procesadas")
+                wrapper = TextIOWrapper(upload, encoding="utf-8", newline="")
+                rows, modo = parse_csv(wrapper)
+                wrapper.detach()   # opcional
 
-            # --- PDF (Certificado 70) ---
+            # --- PDF (Cert 70) ---
             else:
-                print(f"DEBUG: Procesando PDF: {fname}")
-                print(f"DEBUG: Tamaño archivo: {f.size} bytes")
-                rows, modo = parse_cert70_text(f)
-                tipo_archivo = "pdf"
-                print(f"DEBUG PDF: {len(rows)} filas procesadas, modo: {modo}")
+                if hasattr(upload, "seek"):
+                    upload.seek(0)
+                with pdfplumber.open(upload) as pdf:
+                    txt = "\n".join((page.extract_text() or "") for page in pdf.pages)
+                rows, modo = parse_cert70_text(txt)
 
             # Debe haber filas válidas
             if not rows:
-                print("DEBUG: No se detectaron filas válidas")
                 messages.warning(request, "No se detectaron filas válidas.")
                 return render(request, "calificaciones/carga_archivo.html")
 
@@ -95,7 +122,11 @@ def carga_archivo(request):
             # Guardamos datos en sesión para la confirmación
             request.session[SESSION_ROWS] = rows
             request.session[SESSION_MODE] = modo
-            request.session[SESSION_META] = {"nombre": fname, "tipo": tipo_archivo}
+            request.session[SESSION_META] = {
+                "nombre": fname,
+                "tipo": tipo_archivo,
+                "archivo_fuente_id": archivo_fuente.archivo_fuente_id,
+            }
             request.session.modified = True
 
             # Métricas rápidas para mostrar en la vista previa
@@ -121,7 +152,6 @@ def carga_archivo(request):
             })
 
         except Exception as ex:
-            # Cualquier error durante el parseo
             messages.error(request, f"Error al procesar archivo: {ex}")
             return render(request, "calificaciones/carga_archivo.html")
 
@@ -145,20 +175,12 @@ def carga_confirmar(request):
       - CSV + modo 'montos': calcula factores (base = suma posiciones 8..19).
       - CSV + modo 'factors' y PDF: persiste factores tal cual (valida suma 8..19 <= 1).
     """
-    # Solo se permite via POST (botón "Importar")
     if request.method != "POST":
         return redirect("carga_archivo")
 
     rows = request.session.get(SESSION_ROWS) or []
     modo = request.session.get(SESSION_MODE) or "montos"
     meta = request.session.get(SESSION_META) or {}
-
-    print(f"\nDEBUG CONFIRMAR: Total filas en sesión: {len(rows)}")
-    print(f"DEBUG CONFIRMAR: Modo detectado: {modo}")
-    print(f"DEBUG CONFIRMAR: Meta: {meta}")
-    if rows:
-        print(f"DEBUG CONFIRMAR: Primera fila keys: {list(rows[0].keys())}")
-        print(f"DEBUG CONFIRMAR: Primera fila data: {rows[0]}")
 
     # Debe existir preview en sesión
     if not rows:
@@ -170,15 +192,26 @@ def carga_confirmar(request):
         messages.error(request, "No se puede importar: existen registros con errores en la validación.")
         return redirect("carga_archivo")
 
-    # Creamos registro de archivo fuente (para trazabilidad). Si falla, continuamos sin romper.
-    try:
-        archivo_fuente = TblArchivoFuente.objects.create(
-            nombre_archivo=meta.get("nombre", "upload"),
-            ruta_almacenamiento=f"calificaciones/{meta.get('nombre','upload')}",
-            usuario=request.user,
-        )
-    except Exception:
-        archivo_fuente = None  # fallback
+    # Recuperamos el archivo fuente ya creado en carga_archivo
+    archivo_fuente = None
+    af_id = meta.get("archivo_fuente_id")
+
+    if af_id:
+        try:
+            archivo_fuente = TblArchivoFuente.objects.get(pk=af_id)
+        except TblArchivoFuente.DoesNotExist:
+            archivo_fuente = None
+
+    # Si por alguna razón no está, como fallback creamos un registro "vacío"
+    if archivo_fuente is None:
+        try:
+            archivo_fuente = TblArchivoFuente.objects.create(
+                nombre_archivo=meta.get("nombre", "upload"),
+                ruta_almacenamiento="",  # sin ruta conocida
+                usuario=request.user,
+            )
+        except Exception:
+            archivo_fuente = None
 
     def_map = _build_def_map()   # Catálogo {pos: TblFactorDef}
     created = updated = skipped = 0
@@ -188,8 +221,6 @@ def carga_confirmar(request):
     with transaction.atomic():
         for i, r in enumerate(rows, start=1):
             try:
-                print(f"\nDEBUG: Procesando fila {i}")
-                print(f"DEBUG: Keys en fila: {[k for k in r.keys() if 'MONTO' in k or 'FACTOR' in k]}")
                 # ----------------- Encabezado/calificación base -----------------
                 ejercicio   = to_int(r.get("ejercicio"))
                 sec_eve     = to_int(r.get("sec_eve"))
@@ -238,9 +269,7 @@ def carga_confirmar(request):
                     ])
 
                 # ----------------- Persistencia de factores -----------------
-                print(f"DEBUG: Entrando a persistencia - modo={modo}, tipo={meta.get('tipo')}")
-                # CSV + 'montos' -> calcula factores proporcionalmente a total (8..19)
-                if modo == "montos":  # Aplica tanto para CSV como para PDF
+                if modo == "montos":
                     total_base = D("0")
                     montos: dict[int, D] = {}
 
@@ -273,7 +302,6 @@ def carga_confirmar(request):
                             },
                         )
 
-                # CSV (modo 'factors') o PDF con factores directos -> valida suma 8..19 <= 1 y guarda tal cual
                 else:
                     suma_8_19 = D("0")
                     factores: dict[int, D] = {}
@@ -306,23 +334,18 @@ def carga_confirmar(request):
                             },
                         )
 
-                # Contabiliza resultado (creado vs actualizado)
                 if was_created:
                     created += 1
                 else:
                     updated += 1
 
             except Exception as ex:
-                # Cualquier problema en la fila -> se omite y se reporta
                 skipped += 1
                 errores.append(f"Fila {i}: {ex}")
 
-    # Limpia sesión de preview para evitar re-importes accidentales
     _clear_upload_session(request)
 
-    # Mensajes finales
     if errores:
-        # Muestra solo los primeros N errores para no saturar
         messages.warning(request, "Algunas filas se omitieron:\n" + "\n".join(errores[:10]))
     messages.success(
         request,
