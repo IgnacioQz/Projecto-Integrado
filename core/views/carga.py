@@ -4,13 +4,14 @@ from __future__ import annotations
 # IMPORTS
 # ============================================================================
 import os
-from io import TextIOWrapper
+from io import TextIOWrapper, BytesIO
 from decimal import Decimal as D
 
 import pdfplumber
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.shortcuts import render, redirect
 
@@ -31,6 +32,7 @@ from core.ingestion_helpers import (
 SESSION_ROWS = "upload_preview_rows"      # lista de filas normalizadas
 SESSION_MODE = "upload_mode"              # "montos" | "factors"
 SESSION_META = "upload_meta"              # {"nombre":..., "tipo":"csv"|"pdf"}
+SESSION_FILE = "upload_file_content"      # contenido del archivo en bytes (para subir después)
 
 
 # ============================================================================
@@ -38,7 +40,7 @@ SESSION_META = "upload_meta"              # {"nombre":..., "tipo":"csv"|"pdf"}
 # ============================================================================
 def _clear_upload_session(request) -> None:
     """Borra las claves de sesión usadas para la carga/preview."""
-    for key in (SESSION_ROWS, SESSION_MODE, SESSION_META):
+    for key in (SESSION_ROWS, SESSION_MODE, SESSION_META, SESSION_FILE):
         request.session.pop(key, None)
 
 
@@ -55,14 +57,19 @@ def _ext(fname: str) -> str:
 def carga_archivo(request):
     """
     Sube un CSV o PDF (Cert70), valida y genera una vista previa.
-
-    Flujo nuevo:
-      - Sube el archivo a S3 usando default_storage.
-      - Guarda la URL/ruta en TblArchivoFuente.ruta_almacenamiento.
-      - Usa el archivo del request (upload) para parsear el contenido.
+    
+    Flujo NUEVO:
+      1. Lee y parsea el archivo (CSV o PDF)
+      2. Valida el contenido
+      3. Guarda el contenido en SESIÓN (no en S3 todavía)
+      4. Muestra vista previa
+      5. Solo cuando el usuario confirma en carga_confirmar(), se sube a S3
+    
+    Esto evita subir archivos con errores a S3.
     """
+    # POST con archivo: procesar
     if request.method == "POST" and request.FILES.get("archivo"):
-        upload = request.FILES["archivo"]  # archivo subido
+        upload = request.FILES["archivo"]
         fname = upload.name
         ext = _ext(fname)
 
@@ -73,46 +80,36 @@ def carga_archivo(request):
 
         tipo_archivo = "csv" if ext == ".csv" else "pdf"
 
-        # 1) Subir archivo a S3 mediante default_storage
-        #    Guardamos la ruta/URL en TblArchivoFuente (trazabilidad).
-        #    Nos aseguramos de posicionar el stream al inicio.
-        if hasattr(upload, "seek"):
-            upload.seek(0)
-
-        s3_key = default_storage.save(f"calificaciones/{fname}", upload)
         try:
-            file_url = default_storage.url(s3_key)
-        except Exception:
-            # Si por alguna razón url() falla, guardamos la key tal cual
-            file_url = s3_key
-
-        archivo_fuente = TblArchivoFuente.objects.create(
-            nombre_archivo=fname,
-            ruta_almacenamiento=file_url,
-            usuario=request.user,
-        )
-
-        try:
-            # Volvemos el puntero al inicio para leer el archivo
+            # Leer todo el contenido del archivo a memoria
+            if hasattr(upload, "seek"):
+                upload.seek(0)
+            file_content = upload.read()
+            
+            # Volver al inicio para procesamiento
             if hasattr(upload, "seek"):
                 upload.seek(0)
 
             # --- CSV ---
             if ext == ".csv":
-                wrapper = TextIOWrapper(upload, encoding="utf-8", newline="")
+                wrapper = TextIOWrapper(BytesIO(file_content), encoding="utf-8", newline="")
                 rows, modo = parse_csv(wrapper)
-                wrapper.detach()   # opcional
+                wrapper.detach()
+                print(f"DEBUG CSV: {len(rows)} filas procesadas")
 
-            # --- PDF (Cert 70) ---
+            # --- PDF (Certificado 70) ---
             else:
-                if hasattr(upload, "seek"):
-                    upload.seek(0)
-                with pdfplumber.open(upload) as pdf:
-                    txt = "\n".join((page.extract_text() or "") for page in pdf.pages)
-                rows, modo = parse_cert70_text(txt)
+                print(f"DEBUG: Procesando PDF: {fname}")
+                print(f"DEBUG: Tamaño archivo: {len(file_content)} bytes")
+                
+                # Crear un objeto file-like desde bytes para pdfplumber
+                pdf_file_like = BytesIO(file_content)
+                rows, modo = parse_cert70_text(pdf_file_like)
+                print(f"DEBUG PDF: {len(rows)} filas procesadas, modo: {modo}")
 
             # Debe haber filas válidas
             if not rows:
+                print("DEBUG: No se detectaron filas válidas")
                 messages.warning(request, "No se detectaron filas válidas.")
                 return render(request, "calificaciones/carga_archivo.html")
 
@@ -120,12 +117,14 @@ def carga_archivo(request):
             annotate_preview(rows, modo)
 
             # Guardamos datos en sesión para la confirmación
+            # IMPORTANTE: Guardamos el contenido del archivo en sesión (en formato base64 o bytes)
+            import base64
+            request.session[SESSION_FILE] = base64.b64encode(file_content).decode('utf-8')
             request.session[SESSION_ROWS] = rows
             request.session[SESSION_MODE] = modo
             request.session[SESSION_META] = {
                 "nombre": fname,
                 "tipo": tipo_archivo,
-                "archivo_fuente_id": archivo_fuente.archivo_fuente_id,
             }
             request.session.modified = True
 
@@ -152,6 +151,10 @@ def carga_archivo(request):
             })
 
         except Exception as ex:
+            # Cualquier error durante el parseo
+            print(f"DEBUG ERROR: {ex}")
+            import traceback
+            traceback.print_exc()
             messages.error(request, f"Error al procesar archivo: {ex}")
             return render(request, "calificaciones/carga_archivo.html")
 
@@ -171,16 +174,33 @@ def carga_archivo(request):
 def carga_confirmar(request):
     """
     Importa definitivamente las filas de la vista previa (desde sesión).
+    
+    Flujo NUEVO:
+      1. Valida que no hay errores
+      2. PRIMERO sube el archivo a S3
+      3. Crea el registro TblArchivoFuente con la URL de S3
+      4. Procesa y guarda las calificaciones en BD
+      5. Si algo falla, hace rollback de BD pero el archivo YA está en S3
+    
     Reglas:
       - CSV + modo 'montos': calcula factores (base = suma posiciones 8..19).
       - CSV + modo 'factors' y PDF: persiste factores tal cual (valida suma 8..19 <= 1).
     """
+    # Solo se permite via POST (botón "Importar")
     if request.method != "POST":
         return redirect("carga_archivo")
 
     rows = request.session.get(SESSION_ROWS) or []
     modo = request.session.get(SESSION_MODE) or "montos"
     meta = request.session.get(SESSION_META) or {}
+    file_content_b64 = request.session.get(SESSION_FILE)
+
+    print(f"\nDEBUG CONFIRMAR: Total filas en sesión: {len(rows)}")
+    print(f"DEBUG CONFIRMAR: Modo detectado: {modo}")
+    print(f"DEBUG CONFIRMAR: Meta: {meta}")
+    if rows:
+        print(f"DEBUG CONFIRMAR: Primera fila keys: {list(rows[0].keys())}")
+        print(f"DEBUG CONFIRMAR: Primera fila data: {rows[0]}")
 
     # Debe existir preview en sesión
     if not rows:
@@ -192,27 +212,46 @@ def carga_confirmar(request):
         messages.error(request, "No se puede importar: existen registros con errores en la validación.")
         return redirect("carga_archivo")
 
-    # Recuperamos el archivo fuente ya creado en carga_archivo
-    archivo_fuente = None
-    af_id = meta.get("archivo_fuente_id")
+    # Debe existir el contenido del archivo en sesión
+    if not file_content_b64:
+        messages.error(request, "No se encontró el archivo en sesión.")
+        return redirect("carga_archivo")
 
-    if af_id:
+    # ============================================================================
+    # PASO 1: SUBIR ARCHIVO A S3 Y CREAR TblArchivoFuente
+    # ============================================================================
+    try:
+        import base64
+        file_content = base64.b64decode(file_content_b64)
+        fname = meta.get("nombre", "upload")
+        
+        # Subir a S3
+        s3_key = default_storage.save(
+            f"calificaciones/{fname}",
+            ContentFile(file_content)
+        )
+        
         try:
-            archivo_fuente = TblArchivoFuente.objects.get(pk=af_id)
-        except TblArchivoFuente.DoesNotExist:
-            archivo_fuente = None
-
-    # Si por alguna razón no está, como fallback creamos un registro "vacío"
-    if archivo_fuente is None:
-        try:
-            archivo_fuente = TblArchivoFuente.objects.create(
-                nombre_archivo=meta.get("nombre", "upload"),
-                ruta_almacenamiento="",  # sin ruta conocida
-                usuario=request.user,
-            )
+            file_url = default_storage.url(s3_key)
         except Exception:
-            archivo_fuente = None
+            file_url = s3_key
+        
+        # Crear registro de archivo fuente
+        archivo_fuente = TblArchivoFuente.objects.create(
+            nombre_archivo=fname,
+            ruta_almacenamiento=file_url,
+            usuario=request.user,
+        )
+        
+        print(f"DEBUG: Archivo subido a S3: {file_url}")
+        
+    except Exception as ex:
+        messages.error(request, f"Error al subir archivo a S3: {ex}")
+        return redirect("carga_archivo")
 
+    # ============================================================================
+    # PASO 2: PROCESAR Y GUARDAR CALIFICACIONES EN BD
+    # ============================================================================
     def_map = _build_def_map()   # Catálogo {pos: TblFactorDef}
     created = updated = skipped = 0
     errores: list[str] = []
@@ -221,6 +260,9 @@ def carga_confirmar(request):
     with transaction.atomic():
         for i, r in enumerate(rows, start=1):
             try:
+                print(f"\nDEBUG: Procesando fila {i}")
+                print(f"DEBUG: Keys en fila: {[k for k in r.keys() if 'MONTO' in k or 'FACTOR' in k]}")
+                
                 # ----------------- Encabezado/calificación base -----------------
                 ejercicio   = to_int(r.get("ejercicio"))
                 sec_eve     = to_int(r.get("sec_eve"))
@@ -263,14 +305,16 @@ def carga_confirmar(request):
                     if fec_pago:
                         calif.fecha_pago_dividendo = fec_pago
                     calif.usuario = request.user
-                    if archivo_fuente:
-                        calif.archivo_fuente = archivo_fuente
+                    calif.archivo_fuente = archivo_fuente
                     calif.save(update_fields=[
                         "mercado", "instrumento_text", "tipo_ingreso", "descripcion",
                         "fecha_pago_dividendo", "usuario", "archivo_fuente"
                     ])
 
                 # ----------------- Persistencia de factores -----------------
+                print(f"DEBUG: Entrando a persistencia - modo={modo}, tipo={meta.get('tipo')}")
+                
+                # Modo 'montos' -> calcula factores proporcionalmente a total (8..19)
                 if modo == "montos":
                     total_base = D("0")
                     montos: dict[int, D] = {}
@@ -304,6 +348,7 @@ def carga_confirmar(request):
                             },
                         )
 
+                # Modo 'factors' -> valida suma 8..19 <= 1 y guarda tal cual
                 else:
                     suma_8_19 = D("0")
                     factores: dict[int, D] = {}
@@ -336,18 +381,23 @@ def carga_confirmar(request):
                             },
                         )
 
+                # Contabiliza resultado (creado vs actualizado)
                 if was_created:
                     created += 1
                 else:
                     updated += 1
 
             except Exception as ex:
+                # Cualquier problema en la fila -> se omite y se reporta
                 skipped += 1
                 errores.append(f"Fila {i}: {ex}")
 
+    # Limpia sesión de preview para evitar re-importes accidentales
     _clear_upload_session(request)
 
+    # Mensajes finales
     if errores:
+        # Muestra solo los primeros N errores para no saturar
         messages.warning(request, "Algunas filas se omitieron:\n" + "\n".join(errores[:10]))
     messages.success(
         request,
