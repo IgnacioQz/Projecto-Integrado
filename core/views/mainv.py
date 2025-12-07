@@ -18,6 +18,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User, Group
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 
 from core.models import (
     TblCalificacion, TblFactorValor, TblFactorDef,
@@ -186,6 +187,18 @@ def logout_view(request):
     logout(request)
     return redirect("welcome")
 
+# =============================================================================
+# VERIFICACION SESIÓN ACTIVA 
+# =============================================================================
+
+@login_required(login_url="login")
+def check_session(request):
+    request.session.modified = False  # No modifica la sesión
+    
+    return JsonResponse({
+        'authenticated': True,
+        'username': request.user.username,
+    })
 
 # =============================================================================
 # LISTADO PRINCIPAL CON FILTROS (main_view)

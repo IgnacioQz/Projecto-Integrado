@@ -36,4 +36,7 @@ urlpatterns = [
     # --- Auditoría ---
     path("auditoria/", auditoria_views.auditoria_list, name="auditoria_list"),  # Lista de eventos de auditoría
     path("audit-ping/", auditoria_views.audit_ping, name="audit_ping"),         # Prueba rápida/estado de auditoría
+
+     # --- Verificación de sesión ---
+     path("check-session/", main_views.check_session, name="check_session"),
 ]

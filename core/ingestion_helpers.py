@@ -135,52 +135,203 @@ def parse_csv(io_text: TextIOWrapper):
 # -----------------------------
 # PDF Cert70 (texto plano) — placeholder mínimo
 # -----------------------------
-def parse_cert70_text(path_pdf: str):
-    rows = []
-    with pdfplumber.open(path_pdf) as pdf:
-        for page in pdf.pages:
-            tables = page.extract_tables()
-            for tbl in tables:
-                # Buscar tablas que contengan la columna 8
-                header_line = [c.strip() if c else "" for c in tbl[0]]
-                if any("Monto" in h or "Dividen" in h for h in header_line):
-                    for row in tbl[1:]:
-                        c = [str(x).strip().replace(".", "").replace(",", ".") for x in row]
-                        if not c or not c[0] or "Total" in c[0]:
-                            continue
-                        # Ejemplo: fila con 20+ columnas (8 a 19)
-                        try:
-                            fecha = c[0]
-                            div_nro = c[1]
-                            f8  = Decimal(c[8])  if c[8]  not in ("", "0") else Decimal("0")
-                            f9  = Decimal(c[9])  if c[9]  not in ("", "0") else Decimal("0")
-                            f10 = Decimal(c[10]) if c[10] not in ("", "0") else Decimal("0")
-                            f11 = Decimal(c[11]) if c[11] not in ("", "0") else Decimal("0")
-                            f12 = Decimal(c[12]) if c[12] not in ("", "0") else Decimal("0")
-                            f13 = Decimal(c[13]) if c[13] not in ("", "0") else Decimal("0")
-                            f14 = Decimal(c[14]) if c[14] not in ("", "0") else Decimal("0")
-                            f15 = Decimal(c[15]) if c[15] not in ("", "0") else Decimal("0")
-                            f16 = Decimal(c[16]) if c[16] not in ("", "0") else Decimal("0")
-                            f17 = Decimal(c[17]) if c[17] not in ("", "0") else Decimal("0")
-                            f18 = Decimal(c[18]) if c[18] not in ("", "0") else Decimal("0")
-                            f19 = Decimal(c[19]) if c[19] not in ("", "0") else Decimal("0")
-                            suma_819 = f8 + f9 + f10 + f11 + f12 + f13 + f14 + f15 + f16 + f17 + f18 + f19
 
-                            rows.append({
-                                "ejercicio": "2021",
-                                "mercado_cod": "ACC",
-                                "nemo": "CAP",
-                                "fecha_pago": fecha,
-                                "sec_eve": div_nro,
-                                "descripcion": f"Cert70 PDF: {fecha} — suma8_19={suma_819}",
-                                "tipo_ingreso_id": "2",
-                                **{f"F{p}_FACTOR": str(v) for p, v in enumerate(
-                                    [f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18,f19], start=8)
-                                }
-                            })
-                        except Exception:
+from datetime import datetime
+
+def parse_cert70_text(pdf_file):
+    """
+    Parsea un PDF Certificado 70 (formato chileno).
+    Extrae la tabla de CRÉDITOS de la página 2 como MONTOS.
+    
+    Args:
+        pdf_file: Objeto file (Django UploadedFile)
+    
+    Returns:
+        tuple: (rows, modo) donde rows es lista de dicts y modo es 'montos'
+    """
+    rows = []
+    
+    try:
+        pdf_file.seek(0)
+        
+        with pdfplumber.open(pdf_file) as pdf:
+            print(f"DEBUG: PDF tiene {len(pdf.pages)} páginas")
+            
+            for page_num, page in enumerate(pdf.pages, 1):
+                print(f"DEBUG: ========== Procesando página {page_num} ==========")
+                
+                tables = page.extract_tables()
+                print(f"DEBUG: Encontradas {len(tables)} tablas en página {page_num}")
+                
+                for table_num, tbl in enumerate(tables, 1):
+                    if not tbl or len(tbl) < 2:
+                        continue
+                    
+                    print(f"DEBUG: Tabla {table_num} - {len(tbl)} filas x {len(tbl[0]) if tbl[0] else 0} columnas")
+                    
+                    # Identificar si es la tabla de CRÉDITOS (página 2)
+                    header_text = ' '.join([str(c) for c in tbl[0] if c]).upper()
+                    es_tabla_creditos = "CRÉDITO" in header_text or "CREDITO" in header_text
+                    
+                    print(f"DEBUG: ¿Es tabla de créditos? {es_tabla_creditos}")
+                    
+                    if not es_tabla_creditos:
+                        print(f"DEBUG: Tabla {table_num} no es de créditos, saltando")
+                        continue
+                    
+                    # Mostrar headers para entender estructura
+                    print(f"DEBUG: Headers de tabla de créditos:")
+                    for idx, h in enumerate(tbl[0]):
+                        print(f"  Col {idx}: {str(h)[:50]}")
+                    
+                    # Procesar filas de datos (saltar header y footer/totales)
+                    for row_idx, row_data in enumerate(tbl[1:], 1):
+                        if not row_data:
                             continue
-    return rows, "factores"
+                        
+                        # Obtener primera celda para detectar filas válidas
+                        primera_celda = str(row_data[0]).strip() if row_data[0] else ""
+                        
+                        # Saltar filas vacías, headers repetidos y totales
+                        if not primera_celda or \
+                           "TOTAL" in primera_celda.upper() or \
+                           "FECHA" in primera_celda.upper() or \
+                           "CRÉDITO" in primera_celda.upper():
+                            continue
+                        
+                        print(f"\nDEBUG: --- Procesando fila {row_idx} ---")
+                        print(f"DEBUG: Primera celda: '{primera_celda[:50]}'")
+                        print(f"DEBUG: Total columnas en fila: {len(row_data)}")
+                        
+                        # Dividir celdas multi-línea
+                        fechas_raw = primera_celda
+                        fechas = [f.strip() for f in fechas_raw.split('\n') if f.strip() and not any(x in f.upper() for x in ['FECHA', 'RETIRO', 'REMESA'])]
+                        
+                        # Columna 1 = Dividendo Nro
+                        div_nros_raw = str(row_data[1]).strip() if len(row_data) > 1 and row_data[1] else ""
+                        div_nros = [d.strip() for d in div_nros_raw.split('\n') if d.strip()]
+                        
+                        if not fechas:
+                            print(f"DEBUG: Sin fechas válidas, saltando")
+                            continue
+                        
+                        num_subfilas = len(fechas)
+                        print(f"DEBUG: Detectados {num_subfilas} dividendos en esta fila")
+                        
+                        # Asegurar div_nros tenga valores
+                        while len(div_nros) < num_subfilas:
+                            div_nros.append(str(len(div_nros) + 1))
+                        
+                        # Dividir TODAS las columnas
+                        columnas_split = []
+                        for col_idx, cell in enumerate(row_data):
+                            cell_str = str(cell).strip() if cell else ""
+                            lineas = [l.strip() for l in cell_str.split('\n')]
+                            
+                            # Rellenar si faltan líneas
+                            while len(lineas) < num_subfilas:
+                                lineas.append("")
+                            
+                            columnas_split.append(lineas)
+                        
+                        # Procesar cada dividendo (sub-fila)
+                        for subfila_idx in range(num_subfilas):
+                            try:
+                                # Extraer fecha y convertir formato
+                                fecha_raw = fechas[subfila_idx] if subfila_idx < len(fechas) else fechas[0]
+                                
+                                # *** CONVERSIÓN DE FECHA DD/MM/YYYY -> YYYY-MM-DD ***
+                                fecha = fecha_raw
+                                if '/' in fecha_raw:
+                                    try:
+                                        partes = fecha_raw.split('/')
+                                        if len(partes) == 3:
+                                            dia, mes, anio = partes[0], partes[1], partes[2]
+                                            fecha_obj = datetime(int(anio), int(mes), int(dia))
+                                            fecha = fecha_obj.strftime('%Y-%m-%d')
+                                            print(f"DEBUG: Fecha convertida: {fecha_raw} -> {fecha}")
+                                    except Exception as e:
+                                        print(f"DEBUG: Error convirtiendo fecha '{fecha_raw}': {e}")
+                                
+                                div_nro = div_nros[subfila_idx] if subfila_idx < len(div_nros) else str(subfila_idx + 1)
+                                
+                                print(f"DEBUG: Dividendo {subfila_idx+1}/{num_subfilas}: Fecha={fecha}, Div={div_nro}")
+                                
+                                # MAPEO DE COLUMNAS DEL CERTIFICADO 70 A POSICIONES
+                                MAPEO_COLUMNAS = {
+                                    2: 8, 3: 9, 4: 10, 5: 11, 6: 12, 7: 13,
+                                    8: 14, 9: 15, 10: 16, 11: 17, 12: 18, 13: 19,
+                                }
+                                
+                                # Extraer MONTOS de todas las columnas numéricas
+                                montos_dict = {}
+                                total_base = Decimal("0")
+                                valores_encontrados = []
+                                
+                                for col_idx in range(2, min(len(columnas_split), 22)):
+                                    valor_str = columnas_split[col_idx][subfila_idx].strip()
+                                    
+                                    if not valor_str or valor_str in ("0", "-", ""):
+                                        continue
+                                    
+                                    # Limpiar formato chileno (puntos miles, comas decimales)
+                                    valor_limpio = valor_str.replace(".", "").replace(",", ".")
+                                    
+                                    try:
+                                        val = Decimal(valor_limpio)
+                                        if val > 0:
+                                            pos_monto = MAPEO_COLUMNAS.get(col_idx, col_idx + 6)
+                                            montos_dict[f"F{pos_monto}_MONTO"] = str(val)
+                                            
+                                            if 8 <= pos_monto <= 19:
+                                                total_base += val
+                                            valores_encontrados.append(f"F{pos_monto}_MONTO={val} (col{col_idx})")
+                                            
+                                            print(f"  Col {col_idx}: {valor_str} -> F{pos_monto}_MONTO = {val}")
+                                    except (ValueError, Exception) as e:
+                                        print(f"  Col {col_idx}: Error convirtiendo '{valor_str}': {e}")
+                                        continue
+                                
+                                # Rellenar con 0 las posiciones faltantes
+                                for pos in range(8, 20):
+                                    if f"F{pos}_MONTO" not in montos_dict:
+                                        montos_dict[f"F{pos}_MONTO"] = "0"
+                                
+                                print(f"DEBUG: Total base (suma 8-19): {total_base}")
+                                print(f"DEBUG: Montos: {valores_encontrados}")
+                                
+                                # Agregar si hay montos válidos
+                                if total_base > 0:
+                                    rows.append({
+                                        "ejercicio": "2020",
+                                        "mercado_cod": "ACC",
+                                        "nemo": "CAP",
+                                        "fecha_pago": fecha,  # FECHA YA CONVERTIDA
+                                        "sec_eve": div_nro,
+                                        "descripcion": f"Cert70: {fecha} - Div.{div_nro}",
+                                        "tipo_ingreso_id": "2",
+                                        **montos_dict
+                                    })
+                                    print(f"DEBUG: ✓ Dividendo agregado exitosamente")
+                                else:
+                                    print(f"DEBUG: ✗ Dividendo descartado (total_base=0)")
+                                    
+                            except Exception as e:
+                                print(f"DEBUG: Error procesando dividendo {subfila_idx}: {e}")
+                                import traceback
+                                traceback.print_exc()
+                                continue
+        
+        print(f"\n{'='*60}")
+        print(f"DEBUG: TOTAL FILAS EXTRAÍDAS: {len(rows)}")
+        print(f"{'='*60}")
+        
+    except Exception as e:
+        print(f"ERROR CRÍTICO al procesar PDF: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    return rows, "montos"
 
 # -----------------------------
 # Preview con “pre-validaciones” + detalles visibles
