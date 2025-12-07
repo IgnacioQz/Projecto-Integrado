@@ -136,10 +136,6 @@ def parse_csv(io_text: TextIOWrapper):
 # PDF Cert70 (texto plano) — placeholder mínimo
 # -----------------------------
 
-# Reemplaza TODA la función parse_cert70_text en ingestion_helpers.py
-
-from datetime import datetime
-
 def parse_cert70_text(pdf_file):
     """
     Parsea un PDF Certificado 70 (formato chileno).
@@ -159,37 +155,25 @@ def parse_cert70_text(pdf_file):
     try:
         pdf_file.seek(0)
         
-        with pdfplumber.open(pdf_file) as pdf:
-            print(f"DEBUG: PDF tiene {len(pdf.pages)} páginas")
-            
-            for page_num, page in enumerate(pdf.pages, 1):
-                print(f"\nDEBUG: ========== Procesando página {page_num} ==========")
-                
+        with pdfplumber.open(pdf_file) as pdf:            
+            for page_num, page in enumerate(pdf.pages, 1):                
                 tables = page.extract_tables()
-                print(f"DEBUG: Encontradas {len(tables)} tablas en página {page_num}")
                 
                 for table_num, tbl in enumerate(tables, 1):
                     if not tbl or len(tbl) < 2:
                         continue
-                    
-                    print(f"DEBUG: Tabla {table_num} - {len(tbl)} filas x {len(tbl[0]) if tbl[0] else 0} columnas")
-                    
+                                        
                     # Identificar tipo de tabla
                     header_text = ' '.join([str(c) for c in tbl[0] if c]).upper()
                     es_tabla_montos = "MONTO" in header_text and "HISTÓRICO" in header_text
                     es_tabla_creditos = "CRÉDITO" in header_text or "CREDITO" in header_text
                     
-                    print(f"DEBUG: ¿Es tabla de MONTOS (pág 1)? {es_tabla_montos}")
-                    print(f"DEBUG: ¿Es tabla de CRÉDITOS (pág 2)? {es_tabla_creditos}")
-                    
                     # ============================================================
                     # PÁGINA 1: MONTOS DE DIVIDENDOS (F8-F19)
                     # ============================================================
                     if es_tabla_montos:
-                        print(f"DEBUG: Procesando PÁGINA 1 - MONTOS (F8-F19)")
-                        
+
                         # Mostrar headers
-                        print(f"DEBUG: Headers tabla montos:")
                         for idx, h in enumerate(tbl[0][:20]):
                             print(f"  Col {idx}: {str(h)[:50]}")
                         
@@ -203,9 +187,7 @@ def parse_cert70_text(pdf_file):
                             # Saltar totales y headers
                             if not primera_celda or "TOTAL" in primera_celda.upper():
                                 continue
-                            
-                            print(f"\nDEBUG: Fila {row_idx} - Primera celda: '{primera_celda[:50]}'")
-                            
+                                                        
                             # Dividir celdas multi-línea
                             fechas_raw = primera_celda
                             fechas = [f.strip() for f in fechas_raw.split('\n') if f.strip() and '/' in f]
@@ -217,7 +199,6 @@ def parse_cert70_text(pdf_file):
                                 continue
                             
                             num_subfilas = len(fechas)
-                            print(f"DEBUG: Detectados {num_subfilas} dividendos")
                             
                             while len(div_nros) < num_subfilas:
                                 div_nros.append(str(len(div_nros) + 1))
@@ -250,9 +231,7 @@ def parse_cert70_text(pdf_file):
                                 
                                 div_nro = div_nros[subfila_idx]
                                 key = (fecha, div_nro)
-                                
-                                print(f"\nDEBUG: Procesando dividendo {subfila_idx+1}: Fecha={fecha}, Div={div_nro}")
-                                
+                                                                
                                 # Extraer Secuencia Evento (col 4 - Monto Histórico) y Factor Actualización (col 5)
                                 sec_evento = div_nro  # Por defecto usa el div_nro
                                 factor_actualizacion = "1"
@@ -321,10 +300,7 @@ def parse_cert70_text(pdf_file):
                     # PÁGINA 2: CRÉDITOS (F20-F37)
                     # ============================================================
                     elif es_tabla_creditos:
-                        print(f"DEBUG: Procesando PÁGINA 2 - CRÉDITOS (F20-F37)")
-                        
                         # Mostrar headers
-                        print(f"DEBUG: Headers tabla créditos:")
                         for idx, h in enumerate(tbl[0][:20]):
                             print(f"  Col {idx}: {str(h)[:50]}")
                         
@@ -360,9 +336,7 @@ def parse_cert70_text(pdf_file):
                             
                             if not primera_celda or "TOTAL" in primera_celda.upper():
                                 continue
-                            
-                            print(f"\nDEBUG: Fila {row_idx} - Primera celda: '{primera_celda[:50]}'")
-                            
+                                                        
                             # Dividir celdas
                             fechas_raw = primera_celda
                             fechas = [f.strip() for f in fechas_raw.split('\n') if f.strip() and '/' in f]
@@ -374,7 +348,6 @@ def parse_cert70_text(pdf_file):
                                 continue
                             
                             num_subfilas = len(fechas)
-                            print(f"DEBUG: Detectados {num_subfilas} dividendos")
                             
                             while len(div_nros) < num_subfilas:
                                 div_nros.append(str(len(div_nros) + 1))
@@ -405,9 +378,7 @@ def parse_cert70_text(pdf_file):
                                 
                                 div_nro = div_nros[subfila_idx]
                                 key = (fecha, div_nro)
-                                
-                                print(f"DEBUG: Procesando dividendo {subfila_idx+1}: Fecha={fecha}, Div={div_nro}")
-                                
+                                                                
                                 # Buscar la entrada existente de página 1
                                 if key not in rows_por_dividendo:
                                     print(f"WARNING: No se encontró entrada de página 1 para {key}")
@@ -451,7 +422,6 @@ def parse_cert70_text(pdf_file):
             rows.append(row_data)
         
         print(f"\n{'='*60}")
-        print(f"DEBUG: TOTAL FILAS EXTRAÍDAS: {len(rows)}")
         for row in rows:
             montos_keys = [k for k in row.keys() if '_MONTO' in k and row[k] != '0']
             print(f"  {row['fecha_pago']} Div.{row['sec_eve']}: {len(montos_keys)} montos con valores")
