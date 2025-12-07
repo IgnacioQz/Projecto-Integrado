@@ -97,9 +97,34 @@ class TblArchivoFuente(models.Model):
     """Registro de archivos subidos para carga masiva (trazabilidad/evidencia)."""
 
     archivo_fuente_id = models.AutoField(primary_key=True)
-    nombre_archivo = models.CharField(max_length=255, verbose_name="Nombre del Archivo")
-    ruta_almacenamiento = models.CharField(max_length=255, verbose_name="Ruta de Almacenamiento")
-    fecha_subida = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Subida")
+
+    # Nombre legible del archivo que subió el usuario
+    nombre_archivo = models.CharField(
+        max_length=255,
+        verbose_name="Nombre del Archivo",
+    )
+
+    # Archivo físico: Django lo guarda usando DEFAULT_FILE_STORAGE (S3)
+    archivo = models.FileField(
+        upload_to="calificaciones/%Y/%m/%d",
+        null=True,
+        blank=True,
+        verbose_name="Archivo subido (S3 / almacenamiento de archivos)",
+    )
+
+    # Campo antiguo que ya tenías. Lo dejamos opcional para no romper nada.
+    ruta_almacenamiento = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Ruta de Almacenamiento (legacy)",
+        help_text="Opcional; se puede dejar vacío cuando se usa S3.",
+    )
+
+    fecha_subida = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Subida",
+    )
+
     usuario = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
