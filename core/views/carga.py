@@ -95,17 +95,14 @@ def carga_archivo(request):
                 wrapper = TextIOWrapper(BytesIO(file_content), encoding="utf-8", newline="")
                 rows, modo = parse_csv(wrapper)
                 wrapper.detach()
-                print(f"DEBUG CSV: {len(rows)} filas procesadas")
 
             # --- PDF (Certificado 70) ---
             else:
-                print(f"DEBUG: Procesando PDF: {fname}")
-                print(f"DEBUG: Tamaño archivo: {len(file_content)} bytes")
+
                 
                 # Crear un objeto file-like desde bytes para pdfplumber
                 pdf_file_like = BytesIO(file_content)
                 rows, modo = parse_cert70_text(pdf_file_like)
-                print(f"DEBUG PDF: {len(rows)} filas procesadas, modo: {modo}")
 
             # Debe haber filas válidas
             if not rows:
@@ -195,9 +192,6 @@ def carga_confirmar(request):
     meta = request.session.get(SESSION_META) or {}
     file_content_b64 = request.session.get(SESSION_FILE)
 
-    print(f"\nDEBUG CONFIRMAR: Total filas en sesión: {len(rows)}")
-    print(f"DEBUG CONFIRMAR: Modo detectado: {modo}")
-    print(f"DEBUG CONFIRMAR: Meta: {meta}")
     if rows:
         print(f"DEBUG CONFIRMAR: Primera fila keys: {list(rows[0].keys())}")
         print(f"DEBUG CONFIRMAR: Primera fila data: {rows[0]}")
@@ -218,35 +212,65 @@ def carga_confirmar(request):
         return redirect("carga_archivo")
 
     # ============================================================================
-    # PASO 1: SUBIR ARCHIVO A S3 Y CREAR TblArchivoFuente
+    # PASO 1: VERIFICAR DUPLICIDAD Y SUBIR ARCHIVO A S3
     # ============================================================================
     try:
         import base64
+        import hashlib
+        from datetime import datetime
+        
         file_content = base64.b64decode(file_content_b64)
         fname = meta.get("nombre", "upload")
         
-        # Subir a S3
-        s3_key = default_storage.save(
-            f"calificaciones/{fname}",
-            ContentFile(file_content)
-        )
+        # Calcular hash SHA256 del contenido
+        file_hash = hashlib.sha256(file_content).hexdigest()
         
-        try:
-            file_url = default_storage.url(s3_key)
-        except Exception:
-            file_url = s3_key
+        # Buscar si ya existe un archivo con el mismo hash
+        archivo_existente = TblArchivoFuente.objects.filter(
+            hash_contenido=file_hash
+        ).first()
         
-        # Crear registro de archivo fuente
-        archivo_fuente = TblArchivoFuente.objects.create(
-            nombre_archivo=fname,
-            ruta_almacenamiento=file_url,
-            usuario=request.user,
-        )
-        
-        print(f"DEBUG: Archivo subido a S3: {file_url}")
-        
+        if archivo_existente:
+            # Archivo duplicado encontrado - reutilizar
+            archivo_fuente = archivo_existente
+            print(f": Archivo duplicado encontrado (ID: {archivo_fuente.archivo_fuente_id})")
+            
+            # Convertir UTC a hora Chile (restar 3 horas)
+            from datetime import timedelta
+            fecha_chile = archivo_fuente.fecha_subida - timedelta(hours=3)
+            
+            messages.info(
+                request, 
+                f"El archivo ya fue cargado anteriormente el {fecha_chile.strftime('%d/%m/%Y %H:%M')}. "
+                f"Se reutilizará el archivo existente."
+            )
+        else:
+            # Archivo nuevo - subir a S3
+            # Generar nombre único con timestamp para evitar colisiones
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            nombre_unico = f"{timestamp}_{fname}"
+            
+            s3_key = default_storage.save(
+                f"calificaciones/{nombre_unico}",
+                ContentFile(file_content)
+            )
+            
+            try:
+                file_url = default_storage.url(s3_key)
+            except Exception:
+                file_url = s3_key
+            
+            # Crear registro de archivo fuente
+            archivo_fuente = TblArchivoFuente.objects.create(
+                nombre_archivo=fname,
+                ruta_almacenamiento=file_url,
+                hash_contenido=file_hash,
+                tamanio_bytes=len(file_content),
+                usuario=request.user,
+            )
+                    
     except Exception as ex:
-        messages.error(request, f"Error al subir archivo a S3: {ex}")
+        messages.error(request, f"Error al procesar archivo: {ex}")
         return redirect("carga_archivo")
 
     # ============================================================================
@@ -260,9 +284,6 @@ def carga_confirmar(request):
     with transaction.atomic():
         for i, r in enumerate(rows, start=1):
             try:
-                print(f"\nDEBUG: Procesando fila {i}")
-                print(f"DEBUG: Keys en fila: {[k for k in r.keys() if 'MONTO' in k or 'FACTOR' in k]}")
-                
                 # ----------------- Encabezado/calificación base -----------------
                 ejercicio   = to_int(r.get("ejercicio"))
                 sec_eve     = to_int(r.get("sec_eve"))
@@ -311,9 +332,7 @@ def carga_confirmar(request):
                         "fecha_pago_dividendo", "usuario", "archivo_fuente"
                     ])
 
-                # ----------------- Persistencia de factores -----------------
-                print(f"DEBUG: Entrando a persistencia - modo={modo}, tipo={meta.get('tipo')}")
-                
+                # ----------------- Persistencia de factores -----------------                
                 # Modo 'montos' -> calcula factores proporcionalmente a total (8..19)
                 if modo == "montos":
                     total_base = D("0")
