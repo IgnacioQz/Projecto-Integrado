@@ -132,6 +132,19 @@ class TblArchivoFuente(models.Model):
         verbose_name="Usuario que subió el archivo",
     )
 
+    hash_contenido = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,  # Índice para búsquedas rápidas
+        help_text='SHA256 hash del contenido del archivo'
+    )
+    tamanio_bytes = models.BigIntegerField(
+        null=True,
+        blank=True,
+        help_text='Tamaño del archivo en bytes'
+    )
+
     class Meta:
         db_table = "TBL_ARCHIVO_FUENTE"
         verbose_name = "Archivo Fuente"
