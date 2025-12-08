@@ -22,7 +22,7 @@ from core.models_audit_db import AuditEventDB
 # Ajusta estos sets a tus IDs reales de TBL_TIPO_INGRESO.
 # ============================================================================
 ORIGEN_MANUAL_TIPO_IDS = {1}   # p.ej. "Corredor"
-ORIGEN_MASIVA_TIPO_IDS = set() # p.ej. {2}  "Para Carga Masiva"
+ORIGEN_MASIVA_TIPO_IDS = {2}  # p.ej. {2}  "Para Carga Masiva"
 
 
 # ============================================================================
