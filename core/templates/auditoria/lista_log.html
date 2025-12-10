@@ -77,6 +77,7 @@
         <label class="form-label form-label-sm">Desde</label>
         <input type="date" class="form-control form-control-sm" name="fi" value="{{ fi }}">
       </div>
+
       <div class="col-md-2">
         <label class="form-label form-label-sm">Hasta</label>
         <input type="date" class="form-control form-control-sm" name="ff" value="{{ ff }}">
@@ -94,7 +95,7 @@
     <div class="alert alert-light mt-3">Sin resultados</div>
   {% endif %}
 
-  <!-- LISTA AGRUPADA (siempre por Calificación PK) -->
+  <!-- LISTA AGRUPADA -->
   <div class="accordion mt-3" id="auditAccordion">
     {% for g in page_obj.object_list %}
       <div class="accordion-item">
@@ -109,28 +110,32 @@
             </div>
           </button>
         </h2>
+
         <div id="c{{ forloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#auditAccordion">
           <div class="accordion-body p-0">
             <table class="table table-sm mb-0 align-middle">
               <thead class="table-light">
                 <tr>
-                  <th style="width: 200px;">Fecha</th>
-                  <th style="width: 90px;">Op</th>
+                  <th>Fecha</th>
+                  <th style="width:90px;">Op</th>
                   <th>Actor</th>
-                  <th style="width: 110px;">IP</th>
-                  <th style="width: 320px;">Request ID</th>
-                  <th style="width: 140px;">Detalle</th>
+                  <th style="width:110px;">IP</th>
+                  <th style="width:320px;">Request ID</th>
+                  <th style="width:200px;">Detalle</th>
                 </tr>
               </thead>
+
               <tbody>
-                {% for r in g.items %}
+              {% for r in g.items %}
                 <tr>
                   <td><span class="timeline-dot bg-secondary"></span>{{ r.when|localtime|date:"M d, Y, g:i:s a" }}</td>
                   <td><span class="badge badge-op bg-{{ r.op_color }}">{{ r.op_label }}</span></td>
                   <td>{{ r.actor }} <small class="text-muted">({{ r.db_user }})</small></td>
-                  <td><small>{{ r.ip }}</small></td>
+                  <td>{{ r.ip }}</td>
                   <td><code class="text-break">{{ r.rid }}</code></td>
-                  <td>
+
+                  <td class="d-flex gap-1 flex-wrap">
+
                     {% if r.op == 'U' %}
                       <div class="btn-group btn-group-sm">
                         <button class="btn btn-outline-dark" data-bs-toggle="collapse" data-bs-target="#b{{ forloop.parentloop.counter }}{{ forloop.counter }}">Antes</button>
@@ -141,6 +146,13 @@
                     {% else %}
                       <button class="btn btn-sm btn-outline-dark" data-bs-toggle="collapse" data-bs-target="#b{{ forloop.parentloop.counter }}{{ forloop.counter }}">Después</button>
                     {% endif %}
+
+                    {# 📎 Mostrar botón SOLO cuando la calificación tiene archivo masivo #}
+                    {% if r.has_archivo %}
+                      <a href="{% url 'descargar_archivo_fuente' r.pk %}"
+                         class="btn btn-sm btn-outline-secondary">📎 Archivo fuente</a>
+                    {% endif %}
+
                   </td>
                 </tr>
 
@@ -159,8 +171,9 @@
                   </td>
                 </tr>
                 {% endif %}
-                {% endfor %}
+              {% endfor %}
               </tbody>
+
             </table>
           </div>
         </div>
@@ -173,21 +186,15 @@
     <nav class="mt-3">
       <ul class="pagination pagination-sm">
         {% if page_obj.has_previous %}
-          <li class="page-item">
-            <a class="page-link"
-               href="?page={{ page_obj.previous_page_number }}&op={{ op }}&origen={{ origen }}&fi={{ fi }}&ff={{ ff }}">«</a>
-          </li>
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&op={{ op }}&origen={{ origen }}&fi={{ fi }}&ff={{ ff }}">«</a></li>
         {% else %}
           <li class="page-item disabled"><span class="page-link">«</span></li>
         {% endif %}
-        <li class="page-item disabled">
-          <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-        </li>
+
+        <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+
         {% if page_obj.has_next %}
-          <li class="page-item">
-            <a class="page-link"
-               href="?page={{ page_obj.next_page_number }}&op={{ op }}&origen={{ origen }}&fi={{ fi }}&ff={{ ff }}">»</a>
-          </li>
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&op={{ op }}&origen={{ origen }}&fi={{ fi }}&ff={{ ff }}">»</a></li>
         {% else %}
           <li class="page-item disabled"><span class="page-link">»</span></li>
         {% endif %}
