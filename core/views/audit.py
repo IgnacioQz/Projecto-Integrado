@@ -7,22 +7,25 @@ Auditoría:
 """
 from itertools import groupby
 import json
+import os
 
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
 from django.db import connection
-from django.http import JsonResponse
-from django.shortcuts import render
+from django.http import JsonResponse, FileResponse, Http404
+from django.shortcuts import render, get_object_or_404
 from django.utils.timezone import localtime
 
 from core.models_audit_db import AuditEventDB
+from core.models import TblArchivoFuente, TblCalificacion
 
 # ============================================================================
 # CONFIGURACIÓN (IDs de tipo de ingreso por origen)
 # Ajusta estos sets a tus IDs reales de TBL_TIPO_INGRESO.
 # ============================================================================
 ORIGEN_MANUAL_TIPO_IDS = {1}   # p.ej. "Corredor"
-ORIGEN_MASIVA_TIPO_IDS = {2}  # p.ej. {2}  "Para Carga Masiva"
+ORIGEN_MASIVA_TIPO_IDS = {2}   # p.ej. {2}  "Para Carga Masiva"
 
 
 # ============================================================================
@@ -110,7 +113,7 @@ def auditoria_list(request):
     - Calcula métricas del resultado filtrado
     """
     # --- Filtros desde GET ---
-    op     = request.GET.get("op", "").strip().upper()  # 'Creada'|'Modificada'|'Eliminada'|''
+    op     = request.GET.get("op", "").strip().upper()  # I|U|D|''
     origen = request.GET.get("origen", "").strip()       # 'manual'|'masiva'|''
     fi     = request.GET.get("fi", "").strip()           # YYYY-MM-DD
     ff     = request.GET.get("ff", "").strip()           # YYYY-MM-DD
@@ -133,9 +136,35 @@ def auditoria_list(request):
     # Si hay filtro por origen, obtén calificaciones válidas
     calif_ids_ok = _fetch_calif_ids_by_origen(origen) if origen else set()
 
+    # ------------------------------------------------------------------ #
+    # 1) Determinar TODAS las calificaciones afectadas (para ver si
+    #    tienen archivo y si son de carga masiva).
+    # ------------------------------------------------------------------ #
+    calif_ids_all: set[int] = set()
+    for e in base_rows:
+        if e.table_name == "TBL_CALIFICACION":
+            try:
+                calif_ids_all.add(int(e.row_pk))
+            except (TypeError, ValueError):
+                pass
+
     # Mapa de factor -> calificación (para agrupar correctamente)
     factor_ids = [int(e.row_pk) for e in base_rows if e.table_name == "TBL_FACTOR_VALOR"]
     f2c = _fetch_factor_to_calif_map(factor_ids)
+
+    # Los factores también apuntan a calificaciones
+    calif_ids_all.update(f2c.values())
+
+    # Bulk query: info de archivo/tipo_ingreso por calificación
+    calif_fileinfo: dict[int, dict] = {}
+    if calif_ids_all:
+        for cid, archivo_fuente_id, tipo_ingreso_id in TblCalificacion.objects.filter(
+            calificacion_id__in=calif_ids_all
+        ).values_list("calificacion_id", "archivo_fuente_id", "tipo_ingreso_id"):
+            calif_fileinfo[cid] = {
+                "has_file": archivo_fuente_id is not None,
+                "is_masiva": tipo_ingreso_id in ORIGEN_MASIVA_TIPO_IDS,
+            }
 
     # Normaliza filas para la UI
     rows = []
@@ -159,6 +188,19 @@ def auditoria_list(request):
                 pk_visible = e.row_pk
 
         label, color = _badge(e.op)
+
+        # ¿Esta fila corresponde a una calificación con archivo masivo?
+        has_archivo = False
+        try:
+            cid_int = int(pk_visible)
+        except (TypeError, ValueError):
+            cid_int = None
+
+        if cid_int is not None:
+            info = calif_fileinfo.get(cid_int)
+            if info and info["has_file"] and info["is_masiva"]:
+                has_archivo = True
+
         rows.append({
             "pk": pk_visible,
             "table": e.table_name,
@@ -172,6 +214,7 @@ def auditoria_list(request):
             "when": localtime(e.changed_at),
             "before": json.dumps(e.before_row, ensure_ascii=False, indent=2, sort_keys=True) if e.before_row else "",
             "after":  json.dumps(e.after_row,  ensure_ascii=False, indent=2, sort_keys=True) if e.after_row  else "",
+            "has_archivo": has_archivo,  # 👈 flag para el template
         })
 
     # --- Métricas (sobre 'rows' ya filtradas) ---
@@ -225,6 +268,68 @@ def auditoria_list(request):
         "active_users": active_users[:8],  # top visibles
     }
     return render(request, "auditoria/lista_log.html", context)
+
+
+# ============================================================================
+# DESCARGAR ARCHIVO FUENTE (S3 / legacy)
+# ============================================================================
+@login_required(login_url="login")
+@user_passes_test(_is_analista_o_admin)
+def descargar_archivo_fuente(request, calificacion_id: int):
+    """
+    Descarga el archivo fuente asociado a una calificación.
+    - Busca la TblCalificacion por PK.
+    - Usa su FK archivo_fuente_id para encontrar TblArchivoFuente.
+    - Si existe FileField (`archivo`), lo sirve directamente desde S3.
+    - Si no, intenta reconstruir la key desde `ruta_almacenamiento` (legacy).
+    """
+    # 1) Buscar la calificación
+    calif = get_object_or_404(TblCalificacion, pk=calificacion_id)
+
+    # 2) Tomar el archivo fuente asociado
+    af = calif.archivo_fuente
+    if af is None:
+        raise Http404("No existe archivo fuente asociado a esta calificación.")
+
+    # DEBUG opcional
+    print("DEBUG descargar_archivo_fuente: calificacion_id =", calificacion_id)
+    print("  archivo_fuente_id:", af.archivo_fuente_id)
+    print("  archivo.name:", getattr(af.archivo, "name", None))
+    print("  ruta_almacenamiento:", af.ruta_almacenamiento)
+
+    # --- Caso 1: FileField (nuevo flujo con S3) ---
+    if getattr(af, "archivo", None) and af.archivo.name:
+        f = af.archivo.open("rb")  # usa S3Boto3Storage
+        filename = af.nombre_archivo or os.path.basename(af.archivo.name)
+        return FileResponse(
+            f,
+            as_attachment=True,
+            filename=filename,
+        )
+
+    # --- Caso 2: sólo tenemos la URL en ruta_almacenamiento (legacy) ---
+    if af.ruta_almacenamiento:
+        url = af.ruta_almacenamiento.strip()
+
+        key = None
+        marker = ".amazonaws.com/"
+        if marker in url:
+            key = url.split(marker, 1)[1]
+
+        if key:
+            try:
+                f = default_storage.open(key, "rb")
+                filename = af.nombre_archivo or os.path.basename(key)
+                return FileResponse(
+                    f,
+                    as_attachment=True,
+                    filename=filename,
+                )
+            except Exception as ex:
+                print("DEBUG error abriendo archivo legacy desde S3:", ex)
+
+    # Si llegamos aquí, realmente no tenemos cómo resolver el archivo
+    raise Http404("Este registro no tiene archivo asociado")
 
 
 # ============================================================================
